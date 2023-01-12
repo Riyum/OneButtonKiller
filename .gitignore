@@ -1,0 +1,7 @@
+Bin
+Builds
+.cache
+compile_commands.json
+JuceLibraryCode
+msg
+.projectile
