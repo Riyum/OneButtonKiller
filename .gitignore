@@ -1,7 +1,8 @@
-Bin
-Builds
+bin/
+builds/
 .cache
+cl_project/
 compile_commands.json
-JuceLibraryCode
+JuceLibraryCode/
 msg
 .projectile

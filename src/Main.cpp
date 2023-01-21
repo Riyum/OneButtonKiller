@@ -6,19 +6,30 @@
   ==============================================================================
 */
 
-#include <JuceHeader.h>
 #include "MainComponent.h"
+#include <JuceHeader.h>
 
 //==============================================================================
-class BlenderApplication  : public juce::JUCEApplication
+class BlenderApplication : public juce::JUCEApplication
 {
 public:
     //==============================================================================
-    BlenderApplication() {}
+    BlenderApplication()
+    {
+    }
 
-    const juce::String getApplicationName() override       { return ProjectInfo::projectName; }
-    const juce::String getApplicationVersion() override    { return ProjectInfo::versionString; }
-    bool moreThanOneInstanceAllowed() override             { return true; }
+    const juce::String getApplicationName() override
+    {
+        return ProjectInfo::projectName;
+    }
+    const juce::String getApplicationVersion() override
+    {
+        return ProjectInfo::versionString;
+    }
+    bool moreThanOneInstanceAllowed() override
+    {
+        return true;
+    }
 
     //==============================================================================
     void initialise (const juce::String& commandLine) override
@@ -55,24 +66,23 @@ public:
         This class implements the desktop window that contains an instance of
         our MainComponent class.
     */
-    class MainWindow    : public juce::DocumentWindow
+    class MainWindow : public juce::DocumentWindow
     {
     public:
         MainWindow (juce::String name)
             : DocumentWindow (name,
-                              juce::Desktop::getInstance().getDefaultLookAndFeel()
-                                                          .findColour (juce::ResizableWindow::backgroundColourId),
+                              juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            setContentOwned (new MainComponent (NUM_INPUT_CHANNELS, NUM_OUTPUT_CHANNELS), true);
 
-           #if JUCE_IOS || JUCE_ANDROID
+#if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
-           #else
+#else
             setResizable (true, true);
             centreWithSize (getWidth(), getHeight());
-           #endif
+#endif
 
             setVisible (true);
         }
@@ -93,6 +103,8 @@ public:
         */
 
     private:
+        const int NUM_INPUT_CHANNELS = 0;
+        const int NUM_OUTPUT_CHANNELS = 4;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
