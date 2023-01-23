@@ -3,7 +3,7 @@
 
     Osci.cpp
     Created: 17 Jan 2023 12:25:53pm
-    Author:  yu
+    Author:  Riyum
 
   ==============================================================================
 */
@@ -14,8 +14,7 @@
 template <typename Type>
 Osci<Type>::Osci()
 {
-    pc.template get<oscIdx>().initialise ([] (float x)
-                                          { return std::sin (x); });
+    pc.template get<oscIdx>().initialise ([] (float x) { return std::sin (x); });
     pc.template get<gainIdx>().setGainDecibels (-100.0);
 }
 //==============================================================================
@@ -26,43 +25,33 @@ void Osci<Type>::setWaveType (WaveType choice)
 
     switch (choice)
     {
-        case WaveType::SIN:
-            osc.initialise ([] (float x)
-                            { return std::sin (x); });
-            return;
+    case WaveType::SIN:
+        osc.initialise ([] (float x) { return std::sin (x); });
+        return;
 
-        case WaveType::SAW:
-            osc.initialise ([] (float x)
-                            { return x / juce::MathConstants<float>::pi; });
-            return;
+    case WaveType::SAW:
+        osc.initialise ([] (float x) { return x / juce::MathConstants<float>::pi; });
+        return;
 
-        case WaveType::SQR:
-            osc.initialise ([] (float x)
-                            { return x < 0.0f ? -1.0f : 1.0f; });
-            return;
+    case WaveType::SQR:
+        osc.initialise ([] (float x) { return x < 0.0f ? -1.0f : 1.0f; });
+        return;
 
-        case WaveType::WSIN:
-            osc.initialise ([] (float x)
-                            { return std::sin (x); },
-                            100);
-            return;
+    case WaveType::WSIN:
+        osc.initialise ([] (float x) { return std::sin (x); }, 100);
+        return;
 
-        case WaveType::WSAW:
-            osc.initialise ([] (float x)
-                            { return x / juce::MathConstants<float>::pi; },
-                            100);
-            return;
+    case WaveType::WSAW:
+        osc.initialise ([] (float x) { return x / juce::MathConstants<float>::pi; }, 100);
+        return;
 
-        case WaveType::WSQR:
-            osc.initialise ([] (float x)
-                            { return x < 0.0f ? -1.0f : 1.0f; },
-                            200);
-            return;
+    case WaveType::WSQR:
+        osc.initialise ([] (float x) { return x < 0.0f ? -1.0f : 1.0f; }, 200);
+        return;
 
-        default:
-            osc.initialise ([] (float x)
-                            { return std::sin (x); });
-            return;
+    default:
+        osc.initialise ([] (float x) { return std::sin (x); });
+        return;
     }
 }
 //==============================================================================

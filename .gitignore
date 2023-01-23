@@ -1,3 +1,4 @@
+.clang-format.close_to_juce_style
 bin/
 builds/
 .cache

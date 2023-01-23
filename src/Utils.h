@@ -1,7 +1,7 @@
 /* ==============================================================================
     Utils.h
     Created: 16 Jan 2023 9:04:18pm
-    Author:  yu
+    Author:  Riyum
    ============================================================================== */
 
 /* ==============================================================================
@@ -13,7 +13,6 @@
 #pragma once
 
 //==============================================================================
-
 template <typename Base, typename T>
 inline bool instanceof (const T* ptr)
 {
@@ -55,8 +54,7 @@ enum ParamId
 //==============================================================================
 struct ParameterBase : public juce::ChangeBroadcaster
 {
-    ParameterBase (const ParamId id, const juce::String& labelName)
-        : id (id), name (labelName)
+    ParameterBase (const ParamId id, const juce::String& labelName) : id (id), name (labelName)
     {
     }
     virtual ~ParameterBase() = default;
@@ -75,12 +73,8 @@ struct ParameterBase : public juce::ChangeBroadcaster
 //==============================================================================
 struct SliderParameter : public ParameterBase
 {
-    SliderParameter (juce::Range<double> range,
-                     double skew,
-                     double initialValue,
-                     const ParamId id,
-                     const juce::String& labelName,
-                     const juce::String& suffix = {})
+    SliderParameter (juce::Range<double> range, double skew, double initialValue, const ParamId id,
+                     const juce::String& labelName, const juce::String& suffix = {})
         : ParameterBase (id, labelName)
     {
         /* slider.setRange (range.getStart(), range.getEnd(), 0.01); */
@@ -91,8 +85,7 @@ struct SliderParameter : public ParameterBase
         if (suffix.isNotEmpty())
             slider.setTextValueSuffix (suffix);
 
-        slider.onValueChange = [this]
-        { sendChangeMessage(); };
+        slider.onValueChange = [this] { sendChangeMessage(); };
     }
 
     juce::Component* getComponent() override
@@ -125,8 +118,7 @@ struct ChoiceParameter : public ParameterBase
         : ParameterBase (id, labelName)
     {
         parameterBox.addItemList (options, 1);
-        parameterBox.onChange = [this]
-        { sendChangeMessage(); };
+        parameterBox.onChange = [this] { sendChangeMessage(); };
 
         parameterBox.setSelectedId (initialId);
     }
@@ -155,11 +147,29 @@ private:
 };
 
 //==============================================================================
+// template <typename... Param>
+// class Parameters
+// {
+// public:
+//     Parameters (Param... p)
+//         : parameters (p...)
+//     {
+//     }
+
+//     template <int idx>
+//     auto& get() noexcept
+//     {
+//         return std::get<idx> (parameters);
+//     }
+
+// private:
+//     std::tuple<std::unique_ptr<Param...>> parameters;
+// };
+
+//==============================================================================
 class ParametersComponent : public juce::Component
 {
 public:
-    //==============================================================================
-
     //==============================================================================
     ParametersComponent (std::vector<std::unique_ptr<ParameterBase>>& params)
     {
@@ -178,6 +188,7 @@ public:
         }
     }
 
+    //==============================================================================
     ~ParametersComponent()
     {
         for (auto& p : parameters)
@@ -188,7 +199,6 @@ public:
     void resized() override
     {
         auto bounds = getLocalBounds();
-        // bounds.removeFromLeft (100);
 
         for (auto&& p : parameters)
         {
@@ -199,6 +209,16 @@ public:
             auto compBounds = bounds.removeFromTop (p->getPreferredHeight());
             comp->setCentrePosition (compBounds.getCentre());
         }
+    }
+    //==============================================================================
+    int getWidthNeeded()
+    {
+        auto width = 0;
+
+        for (auto&& p : parameters)
+            width = std::max (p->getPreferredWidth(), width);
+
+        return width + 10;
     }
 
     //==============================================================================
@@ -212,6 +232,7 @@ public:
         return height + 10;
     }
 
+    //==============================================================================
     template <typename Type>
     Type getParam (ParamId idx)
     {
@@ -225,10 +246,10 @@ public:
     }
 
     //==============================================================================
-
 private:
     std::vector<std::unique_ptr<ParameterBase>> parameters;
     std::vector<std::unique_ptr<juce::Label>> labels;
+
     //==============================================================================
 };
 //==============================================================================

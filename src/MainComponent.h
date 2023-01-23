@@ -3,6 +3,7 @@
 #include "Osci.h"
 #include "Utils.h"
 #include <JuceHeader.h>
+#include <functional>
 
 class MainComponent : public juce::AudioAppComponent, public juce::ChangeListener
 {
@@ -16,7 +17,6 @@ public:
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
     void releaseResources() override;
     void changeListenerCallback (juce::ChangeBroadcaster* source) override;
-    static juce::String getListOfActiveBits (const juce::BigInteger& b);
 
     //==============================================================================
     void paint (juce::Graphics& g) override;
@@ -25,11 +25,38 @@ public:
 private:
     //==============================================================================
     // juce::AudioDeviceSelectorComponent adsc;
+
+    // DSP processors
+    using Gain = juce::dsp::Gain<float>;
+    using Osc = Osci<float>;
+
+    enum ProcIdx
+    {
+        oscIdx,
+        chanGainIdx,
+        masterGainIdx
+    };
+
+    // Chain definition
+    using Chain = juce::dsp::ProcessorChain<Osc, Gain, Gain>;
+
+    // we need two chains for each stereo output channel
+    Chain chain1[2];
+    Chain chain2[2];
+
+    // LFO's
+    static constexpr float max_osc_freq = 22000.f;
+    static constexpr size_t lfoUpdateRate = 100; // every 100 samples
+    size_t lfoUpdateCounter = lfoUpdateRate;
+
+    Osci<float> lfo1;
+    Osci<float> lfo2;
+
     std::unique_ptr<ParametersComponent> params;
 
-    juce::Random random;
+    // juce::Random random;
 
-    // params recived from listners
+    // params received from listeners
     float master_gain = 0;
 
     float chan1_gain = 0;
@@ -43,30 +70,12 @@ private:
 
     double lfo2_freq = 0;
     float lfo2_gain = 0;
-    // ========================
-
-    using Gain = juce::dsp::Gain<float>;
-    using Osc = Osci<float>;
-
-    enum
-    {
-        oscIdx,
-        gainIdx
-    };
-
-    using Chain = juce::dsp::ProcessorChain<Osc, Gain>;
-
-    Chain chain1[2];
-    Chain chain2[2];
-
-    static constexpr size_t lfoUpdateRate = 100;
-    size_t lfoUpdateCounter = lfoUpdateRate;
-
-    Osci<float> lfo1;
-    Osci<float> lfo2;
 
     //==============================================================================
     void initParameters();
+
+    template <typename T, typename Func, typename... O>
+    void setChainParams (T val, Func f, O*... obj);
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
