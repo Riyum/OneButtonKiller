@@ -6,14 +6,13 @@
   <MAINGROUP id="XqkzOp" name="Blender">
     <GROUP id="{E316A153-17FD-81AA-87DA-EE039D3D4E83}" name="src">
       <GROUP id="{4804B3E1-63B1-5314-9518-79FFEF41B358}" name="components"/>
-      <FILE id="sIRD8I" name="Osci.cpp" compile="1" resource="0" file="src/Osci.cpp"
-            skipPCH="0"/>
-      <FILE id="JnFF8B" name="Osci.h" compile="0" resource="0" file="src/Osci.h"/>
-      <FILE id="IeuObu" name="Utils.h" compile="0" resource="0" file="src/Utils.h"/>
       <FILE id="LjHQGq" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
       <FILE id="Bg6HvT" name="MainComponent.cpp" compile="1" resource="0"
             file="src/MainComponent.cpp"/>
       <FILE id="wYfbIu" name="MainComponent.h" compile="0" resource="0" file="src/MainComponent.h"/>
+      <FILE id="IeuObu" name="Utils.h" compile="0" resource="0" file="src/Utils.h"/>
+      <FILE id="olQrca" name="Osc.cpp" compile="1" resource="0" file="src/Osc.cpp"/>
+      <FILE id="rRr950" name="Osc.h" compile="0" resource="0" file="src/Osc.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>

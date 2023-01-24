@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    Osci.h
+    Osc.h
     Created: 17 Jan 2023 12:25:53pm
     Author:  Riyum
 
@@ -23,10 +23,10 @@ enum WaveType
 };
 
 template <typename Type>
-class Osci
+class Osc
 {
 public:
-    Osci<Type>();
+    Osc<Type>();
     void setWaveType (WaveType choice);
     void setFrequency (Type newValue);
     void setLevel (Type newValue);
@@ -35,6 +35,8 @@ public:
     void process (const juce::dsp::ProcessContextReplacing<Type>& context) noexcept;
     void getNextAudioBlock (juce::dsp::AudioBlock<float>& block);
     void prepare (const juce::dsp::ProcessSpec& spec);
+
+    void hello();
 
 private:
     enum

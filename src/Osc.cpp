@@ -1,25 +1,25 @@
 /*
   ==============================================================================
 
-    Osci.cpp
+    Osc.cpp
     Created: 17 Jan 2023 12:25:53pm
     Author:  Riyum
 
   ==============================================================================
 */
 
-#include "Osci.h"
+#include "Osc.h"
 
 //==============================================================================
 template <typename Type>
-Osci<Type>::Osci()
+Osc<Type>::Osc()
 {
     pc.template get<oscIdx>().initialise ([] (float x) { return std::sin (x); });
     pc.template get<gainIdx>().setGainDecibels (-100.0);
 }
 //==============================================================================
 template <typename Type>
-void Osci<Type>::setWaveType (WaveType choice)
+void Osc<Type>::setWaveType (WaveType choice)
 {
     auto& osc = pc.template get<oscIdx>();
 
@@ -56,42 +56,42 @@ void Osci<Type>::setWaveType (WaveType choice)
 }
 //==============================================================================
 template <typename Type>
-void Osci<Type>::setFrequency (Type newValue)
+void Osc<Type>::setFrequency (Type newValue)
 {
     pc.template get<oscIdx>().setFrequency (newValue);
 }
 
 //==============================================================================
 template <typename Type>
-void Osci<Type>::setLevel (Type newValue)
+void Osc<Type>::setLevel (Type newValue)
 {
     pc.template get<gainIdx>().setGainDecibels (newValue);
 }
 
 //==============================================================================
 template <typename Type>
-Type Osci<Type>::processSample (Type input)
+Type Osc<Type>::processSample (Type input)
 {
     return pc.template get<oscIdx>().processSample (input);
 }
 
 //==============================================================================
 template <typename Type>
-void Osci<Type>::reset() noexcept
+void Osc<Type>::reset() noexcept
 {
     return;
 }
 
 //==============================================================================
 template <typename Type>
-void Osci<Type>::process (const juce::dsp::ProcessContextReplacing<Type>& context) noexcept
+void Osc<Type>::process (const juce::dsp::ProcessContextReplacing<Type>& context) noexcept
 {
     pc.process (context);
 }
 
 //==============================================================================
 template <typename Type>
-void Osci<Type>::getNextAudioBlock (juce::dsp::AudioBlock<float>& block)
+void Osc<Type>::getNextAudioBlock (juce::dsp::AudioBlock<float>& block)
 {
     // for (int channel = 0; channel < block.getNumChannels(); ++channel)
     // {
@@ -105,7 +105,7 @@ void Osci<Type>::getNextAudioBlock (juce::dsp::AudioBlock<float>& block)
 
 //==============================================================================
 template <typename Type>
-void Osci<Type>::prepare (const juce::dsp::ProcessSpec& spec)
+void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 {
     pc.prepare (spec);
 }
@@ -115,4 +115,4 @@ void Osci<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 // Explicit template instantiations to fix linking errors
 // https://www.cs.technion.ac.il/users/yechiel/c++-faq/separate-template-class-defn-from-decl.html
 
-template class Osci<float>;
+template class Osc<float>;
