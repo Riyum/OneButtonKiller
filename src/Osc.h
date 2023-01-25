@@ -1,13 +1,3 @@
-/*
-  ==============================================================================
-
-    Osc.h
-    Created: 17 Jan 2023 12:25:53pm
-    Author:  Riyum
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include <JuceHeader.h>
@@ -29,7 +19,8 @@ public:
     Osc<Type>();
     void setWaveType (WaveType choice);
     void setFrequency (Type newValue);
-    void setLevel (Type newValue);
+    void setGainDecibels (Type newValue);
+    void setGainLinear (Type newValue);
     Type processSample (Type input);
     void reset() noexcept;
     void process (const juce::dsp::ProcessContextReplacing<Type>& context) noexcept;

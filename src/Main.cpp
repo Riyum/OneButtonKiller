@@ -10,11 +10,11 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-class BlenderApplication : public juce::JUCEApplication
+class OneButtonKillerApplication : public juce::JUCEApplication
 {
 public:
     //==============================================================================
-    BlenderApplication()
+    OneButtonKillerApplication()
     {
     }
 
@@ -71,11 +71,12 @@ public:
     public:
         MainWindow (juce::String name)
             : DocumentWindow (name,
-                              juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId),
+                              juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (
+                                  juce::ResizableWindow::backgroundColourId),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent (NUM_INPUT_CHANNELS, NUM_OUTPUT_CHANNELS), true);
+            setContentOwned (new MainComponent(), true);
 
 #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
@@ -103,8 +104,6 @@ public:
         */
 
     private:
-        const int NUM_INPUT_CHANNELS = 0;
-        const int NUM_OUTPUT_CHANNELS = 4;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
@@ -114,4 +113,4 @@ private:
 
 //==============================================================================
 // This macro generates the main() routine that launches the app.
-START_JUCE_APPLICATION (BlenderApplication)
+START_JUCE_APPLICATION (OneButtonKillerApplication)

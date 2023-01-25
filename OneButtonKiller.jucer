@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="MJHt2h" name="Blender" projectType="guiapp" useAppConfig="0"
+<JUCERPROJECT id="MJHt2h" name="OneButtonKiller" projectType="guiapp" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
-              companyWebsite="Darkatnya">
-  <MAINGROUP id="XqkzOp" name="Blender">
+              companyName="Darkatnya">
+  <MAINGROUP id="XqkzOp" name="OneButtonKiller">
     <GROUP id="{E316A153-17FD-81AA-87DA-EE039D3D4E83}" name="src">
-      <GROUP id="{4804B3E1-63B1-5314-9518-79FFEF41B358}" name="components"/>
       <FILE id="LjHQGq" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
       <FILE id="Bg6HvT" name="MainComponent.cpp" compile="1" resource="0"
             file="src/MainComponent.cpp"/>
@@ -19,10 +18,10 @@
   <EXPORTFORMATS>
     <LINUX_MAKE targetFolder="builds/linuxMakefile">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="blender" recommendedWarnings="GCC"
-                       binaryPath="bin"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="blender" recommendedWarnings="GCC"
-                       binaryPath="bin"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="oneButtonKiller" binaryPath="bin"
+                       recommendedWarnings="GCC"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="oneButtonKiller" binaryPath="bin"
+                       recommendedWarnings="GCC"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../libs/JUCE/modules"/>

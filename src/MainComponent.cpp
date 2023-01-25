@@ -1,13 +1,11 @@
 #include "MainComponent.h"
 
-// the linker need and explicit definition for the static struct
-MainComponent::Default_parameters_values MainComponent::Def_param_val;
-
+// the linker need an explicit definition for the static struct
 //==============================================================================
-MainComponent::MainComponent (const int num_input_channels, const int num_output_channels)
-// : adsc (deviceManager, 0, num_input_channels, 0, num_output_channels, false, false, true, false)
+MainComponent::MainComponent()
+// : adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
-    for (int i = 0; i < num_output_channels / 2; i++)
+    for (int i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
         chains.push_back (std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>()));
 
     // Some platforms require permissions to open input channels so request that here
@@ -19,14 +17,18 @@ MainComponent::MainComponent (const int num_input_channels, const int num_output
     }
     else
     {
-        setAudioChannels (num_input_channels, num_output_channels);
+        setAudioChannels (NUM_INPUT_CHANNELS, NUM_OUTPUT_CHANNELS);
     }
 
     // addAndMakeVisible (adsc);
 
+    // initialise Parameter with default values
+    setDefaultParameterValues();
+
+    // initialise Parameters GUI component
     initParameters();
 
-    setSize (params.get()->getWidthNeeded() + 10, params.get()->getHeightNeeded() + 10);
+    setSize (paramsComp.get()->getWidthNeeded() + 10, paramsComp.get()->getHeightNeeded() + 10);
 }
 
 MainComponent::~MainComponent()
@@ -55,8 +57,6 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
 
     lfo1.prepare ({spec.sampleRate / lfoUpdateRate, spec.maximumBlockSize, spec.numChannels});
     lfo2.prepare ({spec.sampleRate / lfoUpdateRate, spec.maximumBlockSize, spec.numChannels});
-
-    setDefaultParameterValues();
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
@@ -67,8 +67,8 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
         audio_blocks.push_back (
             std::make_pair (audioBlock.getSingleChannelBlock (i), audioBlock.getSingleChannelBlock (i + 1)));
 
-    float lfo1_range = max_osc_freq - osc1_freq;
-    float lfo2_range = max_osc_freq - osc2_freq;
+    float lfo1_range = max_osc_freq - chain_param[0].osc_freq;
+    float lfo2_range = max_osc_freq - chain_param[1].osc_freq;
 
     // process by sample
     for (auto samp = 0; samp < bufferToFill.numSamples; ++samp)
@@ -78,12 +78,12 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
             lfoUpdateCounter = lfoUpdateRate;
 
             auto lfoOut1 = lfo1.processSample (0.0f);
-            float mod1 = juce::jmap (lfoOut1, -1.0f, 1.0f, static_cast<float> (osc1_freq), lfo1_range);
-            setChainParams (&chains[0], ParamId::OSC1_FREQ, osc1_freq + mod1 * lfo1_gain);
+            float mod1 = juce::jmap (lfoOut1, -1.0f, 1.0f, static_cast<float> (chain_param[0].osc_freq), lfo1_range);
+            setChainParams (&chains[0], ParamId::OSC1_FREQ, chain_param[0].osc_freq + mod1 * chain_param[0].lfo_gain);
 
             auto lfoOut2 = lfo2.processSample (0.0f);
-            float mod2 = juce::jmap (lfoOut2, -1.0f, 1.0f, static_cast<float> (osc2_freq), lfo2_range);
-            setChainParams (&chains[1], ParamId::OSC2_FREQ, osc2_freq + mod2 * lfo2_gain);
+            float mod2 = juce::jmap (lfoOut2, -1.0f, 1.0f, static_cast<float> (chain_param[1].osc_freq), lfo2_range);
+            setChainParams (&chains[1], ParamId::OSC2_FREQ, chain_param[1].osc_freq + mod2 * chain_param[1].lfo_gain);
         }
         --lfoUpdateCounter;
     }
@@ -116,71 +116,70 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
     {
     // Master Gain
     case ParamId::MASTER:
-        master_gain = static_cast<float> (params->getParam<double> (ParamId::MASTER));
-        setChainParams (nullptr, ParamId::MASTER, master_gain);
+        setChainParams (nullptr, ParamId::MASTER, static_cast<float> (paramsComp->getValue<double> (ParamId::MASTER)));
         return;
 
     // Channels Gain
     case ParamId::CHAN1_GAIN:
         setChainParams (&chains[0], ParamId::CHAN1_GAIN,
-                        static_cast<float> (params->getParam<double> (ParamId::CHAN1_GAIN)));
+                        static_cast<float> (paramsComp->getValue<double> (ParamId::CHAN1_GAIN)));
         return;
 
     case ParamId::CHAN2_GAIN:
         setChainParams (&chains[1], ParamId::CHAN2_GAIN,
-                        static_cast<float> (params->getParam<double> (ParamId::CHAN2_GAIN)));
+                        static_cast<float> (paramsComp->getValue<double> (ParamId::CHAN2_GAIN)));
         return;
 
     // // OSC
     case ParamId::OSC1_WAVETYPE:
         setChainParams (&chains[0], ParamId::OSC1_WAVETYPE,
-                        static_cast<WaveType> (params->getParam<int> (ParamId::OSC1_WAVETYPE)));
+                        static_cast<WaveType> (paramsComp->getValue<int> (ParamId::OSC1_WAVETYPE)));
         return;
     case ParamId::OSC1_FREQ:
-        osc1_freq = params->getParam<double> (ParamId::OSC1_FREQ);
-        setChainParams (&chains[0], ParamId::OSC1_FREQ, osc1_freq);
+        chain_param[0].osc_freq = paramsComp->getValue<double> (ParamId::OSC1_FREQ);
+        setChainParams (&chains[0], ParamId::OSC1_FREQ, chain_param[0].osc_freq);
         return;
     case ParamId::OSC1_GAIN:
         setChainParams (&chains[0], ParamId::OSC1_GAIN,
-                        static_cast<float> (params->getParam<double> (ParamId::OSC1_GAIN)));
+                        static_cast<float> (paramsComp->getValue<double> (ParamId::OSC1_GAIN)));
         return;
 
     case ParamId::OSC2_WAVETYPE:
         setChainParams (&chains[1], ParamId::OSC2_WAVETYPE,
-                        static_cast<WaveType> (params->getParam<int> (ParamId::OSC2_WAVETYPE)));
+                        static_cast<WaveType> (paramsComp->getValue<int> (ParamId::OSC2_WAVETYPE)));
         return;
     case ParamId::OSC2_FREQ:
-        osc2_freq = params->getParam<double> (ParamId::OSC2_FREQ);
-        setChainParams (&chains[1], ParamId::OSC2_FREQ, osc2_freq);
+        chain_param[1].osc_freq = paramsComp->getValue<double> (ParamId::OSC2_FREQ);
+        setChainParams (&chains[1], ParamId::OSC2_FREQ, chain_param[1].osc_freq);
         return;
     case ParamId::OSC2_GAIN:
         setChainParams (&chains[1], ParamId::OSC2_GAIN,
-                        static_cast<float> (params->getParam<double> (ParamId::OSC2_GAIN)));
+                        static_cast<float> (paramsComp->getValue<double> (ParamId::OSC2_GAIN)));
         return;
 
     // // LFO
     case ParamId::LFO1_WAVETYPE:
-        lfo1.setWaveType (static_cast<WaveType> (params->getParam<int> (ParamId::LFO1_WAVETYPE)));
+        lfo1.setWaveType (static_cast<WaveType> (paramsComp->getValue<int> (ParamId::LFO1_WAVETYPE)));
         return;
     case ParamId::LFO1_FREQ:
-        lfo1_freq = params->getParam<double> (ParamId::LFO1_FREQ);
-        lfo1.setFrequency (lfo1_freq);
+        chain_param[0].lfo_freq = paramsComp->getValue<double> (ParamId::LFO1_FREQ);
+        lfo1.setFrequency (chain_param[0].lfo_freq);
         return;
     case ParamId::LFO1_GAIN:
-        lfo1_gain = static_cast<float> (params->getParam<double> (ParamId::LFO1_GAIN));
-        lfo1.setLevel (lfo1_gain);
+        chain_param[0].lfo_gain = static_cast<float> (paramsComp->getValue<double> (ParamId::LFO1_GAIN));
+        lfo1.setGainLinear (chain_param[0].lfo_gain);
         return;
 
     case ParamId::LFO2_WAVETYPE:
-        lfo2.setWaveType (static_cast<WaveType> (params->getParam<int> (ParamId::LFO2_WAVETYPE)));
+        lfo2.setWaveType (static_cast<WaveType> (paramsComp->getValue<int> (ParamId::LFO2_WAVETYPE)));
         return;
     case ParamId::LFO2_FREQ:
-        lfo2_freq = params->getParam<double> (ParamId::LFO2_FREQ);
-        lfo2.setFrequency (lfo2_freq);
+        chain_param[1].lfo_freq = paramsComp->getValue<double> (ParamId::LFO2_FREQ);
+        lfo2.setFrequency (chain_param[1].lfo_freq);
         return;
     case ParamId::LFO2_GAIN:
-        lfo2_gain = static_cast<float> (params->getParam<double> (ParamId::LFO2_GAIN));
-        lfo2.setLevel (lfo2_gain);
+        chain_param[1].lfo_gain = static_cast<float> (paramsComp->getValue<double> (ParamId::LFO2_GAIN));
+        lfo2.setGainLinear (chain_param[1].lfo_gain);
         return;
     }
 }
@@ -191,83 +190,86 @@ void MainComponent::initParameters()
     std::vector<std::unique_ptr<ParameterBase>> parameters;
 
     // Master Gain
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 1.0}, 1, Def_param_val.master_gain,
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 1.0}, 1, def_param.master_gain,
                                                              ParamId::MASTER, "Master", "%"));
 
     // Channels Gain
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 0.0}, 1, Def_param_val.chans_gain,
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 0.0}, 1, def_param.chan_gain,
                                                              ParamId::CHAN1_GAIN, "ch1 Gain", "dB"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 0.0}, 1, Def_param_val.chans_gain,
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 0.0}, 1, def_param.chan_gain,
                                                              ParamId::CHAN2_GAIN, "ch2 Gain", "dB"));
 
     // OSC
     parameters.push_back (
         std::make_unique<ChoiceParameter> (juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"},
-                                           Def_param_val.osc_wavetype, ParamId::OSC1_WAVETYPE, "OSC1 Wave type"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 22000.0}, 0.4, Def_param_val.osc_freq,
+                                           def_param.osc_wavetype, ParamId::OSC1_WAVETYPE, "OSC1 Wave type"));
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 22000.0}, 0.4, def_param.osc_freq,
                                                              ParamId::OSC1_FREQ, "Freq", "Hz"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 10.0}, 3.0, Def_param_val.osc_gain,
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 10.0}, 3.0, def_param.osc_gain,
                                                              ParamId::OSC1_GAIN, "Gain", "dB"));
 
     parameters.push_back (
         std::make_unique<ChoiceParameter> (juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"},
                                            WaveType::SQR, ParamId::OSC2_WAVETYPE, "OSC2 Wave type"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 22000.0}, 0.4, Def_param_val.osc_freq,
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 22000.0}, 0.4, def_param.osc_freq,
                                                              ParamId::OSC2_FREQ, "Freq", "Hz"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 10.0}, 3.0, Def_param_val.osc_gain,
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{-100.0, 10.0}, 3.0, def_param.osc_gain,
                                                              ParamId::OSC2_GAIN, "Gain", "dB"));
 
     // LFO
     parameters.push_back (
         std::make_unique<ChoiceParameter> (juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"},
-                                           Def_param_val.lfo_wavetype, ParamId::LFO1_WAVETYPE, "LFO1 Wave type"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 70.0}, 0.6, Def_param_val.lfo_freq,
+                                           def_param.lfo_wavetype, ParamId::LFO1_WAVETYPE, "LFO1 Wave type"));
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 70.0}, 0.6, def_param.lfo_freq,
                                                              ParamId::LFO1_FREQ, "Freq", "Hz"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 1.0}, 0.3, Def_param_val.lfo_gain,
-                                                             ParamId::LFO1_GAIN, "Gain"));
+    parameters.push_back (
+        std::make_unique<SliderParameter> (juce::Range{0.0, 1.0}, 0.3, def_param.lfo_gain, ParamId::LFO1_GAIN, "Gain"));
 
     parameters.push_back (
         std::make_unique<ChoiceParameter> (juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"},
-                                           Def_param_val.lfo_wavetype, ParamId::LFO2_WAVETYPE, "LFO2 Wave type"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 70.0}, 0.6, Def_param_val.lfo_freq,
+                                           def_param.lfo_wavetype, ParamId::LFO2_WAVETYPE, "LFO2 Wave type"));
+    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 70.0}, 0.6, def_param.lfo_freq,
                                                              ParamId::LFO2_FREQ, "Freq", "Hz"));
-    parameters.push_back (std::make_unique<SliderParameter> (juce::Range{0.0, 1.0}, 0.3, Def_param_val.lfo_gain,
-                                                             ParamId::LFO2_GAIN, "Gain"));
+    parameters.push_back (
+        std::make_unique<SliderParameter> (juce::Range{0.0, 1.0}, 0.3, def_param.lfo_gain, ParamId::LFO2_GAIN, "Gain"));
 
     for (auto& p : parameters)
         p->addChangeListener (this);
 
-    params = std::make_unique<ParametersComponent> (parameters);
-    addAndMakeVisible (params.get());
+    paramsComp = std::make_unique<ParametersComponent> (parameters);
+    addAndMakeVisible (paramsComp.get());
     resized();
 }
 
 void MainComponent::setDefaultParameterValues()
 {
+    // initilize parameters struct with default parametrs
+    def_param.setDefaultParams();
+
     // Master gain
-    setChainParams (nullptr, ParamId::MASTER, Def_param_val.master_gain);
+    setChainParams (nullptr, ParamId::MASTER, def_param.master_gain);
 
     // Channels gain
-    setChainParams (&chains[0], ParamId::CHAN1_GAIN, Def_param_val.chans_gain);
-    setChainParams (&chains[1], ParamId::CHAN2_GAIN, Def_param_val.chans_gain);
+    setChainParams (&chains[0], ParamId::CHAN1_GAIN, def_param.chan_gain);
+    setChainParams (&chains[1], ParamId::CHAN2_GAIN, def_param.chan_gain);
 
     // OSC
-    setChainParams (&chains[0], ParamId::OSC1_WAVETYPE, Def_param_val.osc_wavetype);
-    setChainParams (&chains[0], ParamId::OSC1_FREQ, Def_param_val.osc_freq);
-    setChainParams (&chains[0], ParamId::OSC1_GAIN, Def_param_val.osc_gain);
+    setChainParams (&chains[0], ParamId::OSC1_WAVETYPE, def_param.osc_wavetype);
+    setChainParams (&chains[0], ParamId::OSC1_FREQ, def_param.osc_freq);
+    setChainParams (&chains[0], ParamId::OSC1_GAIN, def_param.osc_gain);
 
     setChainParams (&chains[1], ParamId::OSC2_WAVETYPE, WaveType::SQR);
-    setChainParams (&chains[1], ParamId::OSC2_FREQ, Def_param_val.osc_freq);
-    setChainParams (&chains[1], ParamId::OSC2_GAIN, Def_param_val.osc_gain);
+    setChainParams (&chains[1], ParamId::OSC2_FREQ, def_param.osc_freq);
+    setChainParams (&chains[1], ParamId::OSC2_GAIN, def_param.osc_gain);
 
     // LFO
-    setChainParams (&chains[0], ParamId::LFO1_WAVETYPE, Def_param_val.lfo_wavetype);
-    setChainParams (&chains[0], ParamId::LFO1_FREQ, Def_param_val.lfo_freq);
-    setChainParams (&chains[0], ParamId::LFO1_GAIN, Def_param_val.lfo_gain);
+    setChainParams (&chains[0], ParamId::LFO1_WAVETYPE, def_param.lfo_wavetype);
+    setChainParams (&chains[0], ParamId::LFO1_FREQ, def_param.lfo_freq);
+    setChainParams (&chains[0], ParamId::LFO1_GAIN, def_param.lfo_gain);
 
-    setChainParams (&chains[1], ParamId::LFO2_WAVETYPE, Def_param_val.lfo_wavetype);
-    setChainParams (&chains[1], ParamId::LFO2_FREQ, Def_param_val.lfo_freq);
-    setChainParams (&chains[1], ParamId::LFO2_GAIN, Def_param_val.lfo_gain);
+    setChainParams (&chains[1], ParamId::LFO2_WAVETYPE, def_param.lfo_wavetype);
+    setChainParams (&chains[1], ParamId::LFO2_FREQ, def_param.lfo_freq);
+    setChainParams (&chains[1], ParamId::LFO2_GAIN, def_param.lfo_gain);
 }
 
 template <typename T, typename Func, typename... O>
@@ -316,8 +318,8 @@ void MainComponent::setChainParams (StereoChain* chain, ParamId idx, T val)
 
     case ParamId::OSC1_GAIN:
     case ParamId::OSC2_GAIN:
-        chain->first->get<ProcIdx::oscIdx>().setLevel (val);
-        chain->second->get<ProcIdx::oscIdx>().setLevel (val);
+        chain->first->get<ProcIdx::oscIdx>().setGainDecibels (val);
+        chain->second->get<ProcIdx::oscIdx>().setGainDecibels (val);
         break;
     }
 }
@@ -334,6 +336,6 @@ void MainComponent::resized()
 {
     auto bounds = getLocalBounds();
 
-    if (params.get() != nullptr)
-        params->setBounds (bounds.removeFromTop (params->getHeightNeeded()).reduced (20, 0));
+    if (paramsComp.get() != nullptr)
+        paramsComp->setBounds (bounds.removeFromTop (paramsComp->getHeightNeeded()).reduced (20, 0));
 }

@@ -1,13 +1,3 @@
-/*
-  ==============================================================================
-
-    Osc.cpp
-    Created: 17 Jan 2023 12:25:53pm
-    Author:  Riyum
-
-  ==============================================================================
-*/
-
 #include "Osc.h"
 
 //==============================================================================
@@ -17,6 +7,7 @@ Osc<Type>::Osc()
     pc.template get<oscIdx>().initialise ([] (float x) { return std::sin (x); });
     pc.template get<gainIdx>().setGainDecibels (-100.0);
 }
+
 //==============================================================================
 template <typename Type>
 void Osc<Type>::setWaveType (WaveType choice)
@@ -63,9 +54,16 @@ void Osc<Type>::setFrequency (Type newValue)
 
 //==============================================================================
 template <typename Type>
-void Osc<Type>::setLevel (Type newValue)
+void Osc<Type>::setGainDecibels (Type newValue)
 {
     pc.template get<gainIdx>().setGainDecibels (newValue);
+}
+
+//==============================================================================
+template <typename Type>
+void Osc<Type>::setGainLinear (Type newValue)
+{
+    pc.template get<gainIdx>().setGainLinear (newValue);
 }
 
 //==============================================================================

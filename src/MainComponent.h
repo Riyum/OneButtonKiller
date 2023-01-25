@@ -3,13 +3,15 @@
 #include "Osc.h"
 #include "Utils.h"
 #include <JuceHeader.h>
+#include <array>
 #include <memory>
+#include <vector>
 
 class MainComponent : public juce::AudioAppComponent, public juce::ChangeListener
 {
 public:
     //==============================================================================
-    MainComponent (const int num_input_channels, const int num_output_channels);
+    MainComponent();
     ~MainComponent() override;
 
     //==============================================================================
@@ -56,37 +58,43 @@ private:
     Osc<float> lfo1;
     Osc<float> lfo2;
 
-    std::unique_ptr<ParametersComponent> params;
+    // GUI
+    std::unique_ptr<ParametersComponent> paramsComp;
 
-    static struct Default_parameters_values
+    static constexpr int NUM_INPUT_CHANNELS = 0;
+    static constexpr int NUM_OUTPUT_CHANNELS = 4;
+
+    struct Parameter
     {
-        float master_gain = 0.8; // linear
-        float chans_gain = 0.0;  // dB
+        float master_gain = 0;  // linear
+        float chan_gain = -100; // dB
 
-        WaveType osc_wavetype = WaveType::SAW;
-        float osc_freq = 220.0;
-        float osc_gain = -20.0;
+        WaveType osc_wavetype = WaveType::SIN;
+        double osc_freq = 0;
+        float osc_gain = -100;
 
         WaveType lfo_wavetype = WaveType::SIN;
-        float lfo_freq = 0.0;
-        float lfo_gain = -100.0;
+        double lfo_freq = 0;
+        float lfo_gain = 0; // linear
 
-    } Def_param_val;
+        void setDefaultParams()
+        {
+            master_gain = 0.7;
+            chan_gain = 0;
 
-    // params received from listeners
-    float master_gain = 0;
+            osc_wavetype = WaveType::SIN;
+            osc_freq = 440;
+            osc_gain = -25;
 
-    float chan1_gain = 0;
-    float chan2_gain = 0;
+            lfo_wavetype = WaveType::SIN;
+            lfo_freq = 0;
+            lfo_gain = 0;
+        }
+    };
 
-    double osc1_freq = 0;
-    double osc2_freq = 0;
+    std::array<Parameter, static_cast<int> (NUM_OUTPUT_CHANNELS / 2)> chain_param;
 
-    double lfo1_freq = 0;
-    float lfo1_gain = 0;
-
-    double lfo2_freq = 0;
-    float lfo2_gain = 0;
+    Parameter def_param;
 
     //==============================================================================
     void changeListenerCallback (juce::ChangeBroadcaster* source) override;
