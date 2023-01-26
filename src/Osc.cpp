@@ -4,8 +4,6 @@
 template <typename Type>
 Osc<Type>::Osc()
 {
-    pc.template get<oscIdx>().initialise ([] (float x) { return std::sin (x); });
-    pc.template get<gainIdx>().setGainDecibels (-100.0);
 }
 
 //==============================================================================
@@ -84,21 +82,24 @@ void Osc<Type>::reset() noexcept
 template <typename Type>
 void Osc<Type>::process (const juce::dsp::ProcessContextReplacing<Type>& context) noexcept
 {
-    pc.process (context);
-}
+    auto& inputBlock = context.getInputBlock();
+    auto& outputBlock = context.getOutputBlock();
+    auto numSamples = outputBlock.getNumSamples();
+    auto numChannels = outputBlock.getNumChannels();
 
-//==============================================================================
-template <typename Type>
-void Osc<Type>::getNextAudioBlock (juce::dsp::AudioBlock<float>& block)
-{
-    // for (int channel = 0; channel < block.getNumChannels(); ++channel)
-    // {
-    //     for (int sample = 0; sample < block.getNumSamples(); ++sample)
-    //     {
-    //     }
-    // }
+    for (size_t ch = 0; ch < numChannels; ++ch)
+    {
+        auto* input = inputBlock.getChannelPointer (ch);
+        auto* output = outputBlock.getChannelPointer (ch);
 
-    process (juce::dsp::ProcessContextReplacing<float> (block));
+        for (size_t i = 0; i < numSamples; ++i)
+        {
+            auto freq = pc.template get<oscIdx>().getFrequency();
+            pc.template get<oscIdx>().setFrequency (freq + fm.getFrequency() * fm_depth);
+            output[i] = pc.template get<oscIdx>().processSample (input[i]);
+        }
+    }
+    pc.template get<gainIdx>().process (context);
 }
 
 //==============================================================================
@@ -106,9 +107,28 @@ template <typename Type>
 void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 {
     pc.prepare (spec);
+    fm.prepare (spec);
+
+    pc.template get<oscIdx>().initialise ([] (float x) { return std::sin (x); });
+    pc.template get<gainIdx>().setGainDecibels (-100.0);
+
+    fm.initialise ([] (float x) { return std::sin (x); });
+    fm_depth = 0;
 }
 
 //==============================================================================
+template <typename Type>
+void Osc<Type>::setFmFreq (const Type freq)
+{
+    fm.setFrequency (freq);
+}
+
+//==============================================================================
+template <typename Type>
+void Osc<Type>::setFmDepth (const float depth)
+{
+    fm_depth = depth;
+}
 
 // Explicit template instantiations to fix linking errors
 // https://www.cs.technion.ac.il/users/yechiel/c++-faq/separate-template-class-defn-from-decl.html

@@ -15,8 +15,11 @@ enum ParamId
     /* this enum plays the roll as the id of the component and its
      * index in the std::vector parameters as well */
 
+    // The magic button
+    BTN = 0,
+
     // Master Gain
-    MASTER = 0,
+    MASTER,
 
     // Channels
     CHAN1_GAIN,
@@ -26,10 +29,14 @@ enum ParamId
     OSC1_WAVETYPE,
     OSC1_FREQ,
     OSC1_GAIN,
+    OSC1_FM_FREQ,
+    OSC1_FM_DEPTH,
 
     OSC2_WAVETYPE,
     OSC2_FREQ,
     OSC2_GAIN,
+    OSC2_FM_FREQ,
+    OSC2_FM_DEPTH,
 
     // LFO
     LFO1_WAVETYPE,
@@ -38,16 +45,19 @@ enum ParamId
 
     LFO2_WAVETYPE,
     LFO2_FREQ,
-    LFO2_GAIN
+    LFO2_GAIN,
+
+    // Delay
+    DEL_MIX,
 };
 
 //==============================================================================
-struct ParameterBase : public juce::ChangeBroadcaster
+struct BaseComp : public juce::ChangeBroadcaster
 {
-    ParameterBase (const ParamId id, const juce::String& labelName) : id (id), name (labelName)
+    BaseComp (const ParamId id, const juce::String& labelName) : id (id), name (labelName)
     {
     }
-    virtual ~ParameterBase() = default;
+    virtual ~BaseComp() = default;
 
     virtual juce::Component* getComponent() = 0;
 
@@ -57,15 +67,15 @@ struct ParameterBase : public juce::ChangeBroadcaster
     ParamId id;
     juce::String name;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ParameterBase)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BaseComp)
 };
 
 //==============================================================================
-struct SliderParameter : public ParameterBase
+struct SliderComp : public BaseComp
 {
-    SliderParameter (juce::Range<double> range, double skew, double initialValue, const ParamId id,
-                     const juce::String& labelName, const juce::String& suffix = {})
-        : ParameterBase (id, labelName)
+    SliderComp (juce::Range<double> range, double skew, double initialValue, const ParamId id,
+                const juce::String& labelName, const juce::String& suffix = {})
+        : BaseComp (id, labelName)
     {
         /* slider.setRange (range.getStart(), range.getEnd(), 0.01); */
         slider.setRange (range.getStart(), range.getEnd());
@@ -97,15 +107,20 @@ struct SliderParameter : public ParameterBase
         return slider.getValue();
     }
 
+    void setValue (const double val)
+    {
+        slider.setValue (val);
+    }
+
 private:
     juce::Slider slider;
 };
 
 //==============================================================================
-struct ChoiceParameter : public ParameterBase
+struct ChoiceComp : public BaseComp
 {
-    ChoiceParameter (const juce::StringArray& options, int initialId, const ParamId id, const juce::String& labelName)
-        : ParameterBase (id, labelName)
+    ChoiceComp (const juce::StringArray& options, int initialId, const ParamId id, const juce::String& labelName)
+        : BaseComp (id, labelName)
     {
         parameterBox.addItemList (options, 1);
         parameterBox.onChange = [this] { sendChangeMessage(); };
@@ -132,8 +147,43 @@ struct ChoiceParameter : public ParameterBase
         return parameterBox.getSelectedId();
     }
 
+    void setValue (const int val)
+    {
+        parameterBox.setSelectedId (val);
+    }
+
 private:
     juce::ComboBox parameterBox;
+};
+
+struct BtnComp : public BaseComp
+{
+    BtnComp (const juce::String& buttonText, std::function<void()> func, const ParamId id,
+             const juce::String& labelName)
+        : BaseComp (id, labelName)
+    {
+        btn.setButtonText (buttonText);
+        // btn.onStateChange = [this] { sendChangeMessage(); };
+        btn.onClick = func;
+    }
+
+    juce::Component* getComponent() override
+    {
+        return &btn;
+    }
+
+    int getPreferredHeight() override
+    {
+        return 20;
+    }
+
+    int getPreferredWidth() override
+    {
+        return btn.getBestWidthForHeight (getPreferredHeight());
+    }
+
+private:
+    juce::TextButton btn;
 };
 
 //==============================================================================
@@ -157,17 +207,20 @@ private:
 // };
 
 //==============================================================================
-class ParametersComponent : public juce::Component
+class ControlComponent : public juce::Component
 {
 public:
     //==============================================================================
-    ParametersComponent (std::vector<std::unique_ptr<ParameterBase>>& params)
+    ControlComponent (std::vector<std::unique_ptr<BaseComp>>& params)
     {
-        parameters = std::move (params);
+        controls = std::move (params);
 
-        for (auto&& param : parameters)
+        for (auto&& param : controls)
         {
             addAndMakeVisible (param->getComponent());
+
+            if (instanceof <juce::TextButton> (param.get()))
+                continue;
 
             std::unique_ptr<juce::Label> paramLabel = std::make_unique<juce::Label> ("", param->name);
 
@@ -179,9 +232,9 @@ public:
     }
 
     //==============================================================================
-    ~ParametersComponent()
+    ~ControlComponent()
     {
-        for (auto& p : parameters)
+        for (auto& p : controls)
             p->removeAllChangeListeners();
     }
 
@@ -190,7 +243,7 @@ public:
     {
         auto bounds = getLocalBounds();
 
-        for (auto&& p : parameters)
+        for (auto&& p : controls)
         {
             auto* comp = p->getComponent();
 
@@ -205,10 +258,10 @@ public:
     {
         auto width = 0;
 
-        for (auto&& p : parameters)
+        for (auto&& p : controls)
             width = std::max (p->getPreferredWidth(), width);
 
-        return width + 10;
+        return width + 110 + 10;
     }
 
     //==============================================================================
@@ -216,7 +269,7 @@ public:
     {
         auto height = 0;
 
-        for (auto&& p : parameters)
+        for (auto&& p : controls)
             height += p->getPreferredHeight();
 
         return height + 10;
@@ -226,18 +279,20 @@ public:
     template <typename Type>
     Type getValue (ParamId idx)
     {
-        auto* comp = parameters[idx].get();
+        auto* comp = controls[idx].get();
 
-        if (instanceof <SliderParameter> (comp))
-            return dynamic_cast<SliderParameter*> (comp)->getCurrentValue();
+        if (instanceof <SliderComp> (comp))
+            return dynamic_cast<SliderComp*> (comp)->getCurrentValue();
 
-        if (instanceof <ChoiceParameter> (comp))
-            return dynamic_cast<ChoiceParameter*> (comp)->getCurrentValue();
+        if (instanceof <ChoiceComp> (comp))
+            return dynamic_cast<ChoiceComp*> (comp)->getCurrentValue();
     }
 
     //==============================================================================
+
+    std::vector<std::unique_ptr<BaseComp>> controls;
+
 private:
-    std::vector<std::unique_ptr<ParameterBase>> parameters;
     std::vector<std::unique_ptr<juce::Label>> labels;
 
     //==============================================================================
