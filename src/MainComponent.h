@@ -9,11 +9,11 @@
 #include <random>
 #include <vector>
 
-class MainComponent : public juce::AudioAppComponent, public juce::ChangeListener
+class MainComponent : public juce::AudioAppComponent, public juce::ChangeListener, private juce::Timer
 {
 public:
     //==============================================================================
-    MainComponent();
+    MainComponent (juce::ValueTree root);
     ~MainComponent() override;
 
     //==============================================================================
@@ -45,7 +45,7 @@ private:
     };
 
     // Chain definition
-    // signal flow: Osc ---> ... ---> Gain (channel) ---> Gain (master) ----> out
+    // signal flow: ... ---> Gain (channel) ---> Gain (master) ----> out
     using Chain = juce::dsp::ProcessorChain<OSC, DEL, Gain, Gain>;
 
     // we need two chains for each stereo output channel
@@ -64,29 +64,7 @@ private:
     Osc<float> lfo1;
     Osc<float> lfo2;
 
-    struct Parameter
-    {
-        float master_gain = 0.7; // linear
-        float chan_gain = -10;   // dB
-
-        WaveType osc_wavetype = WaveType::SIN;
-        double osc_freq = 440;
-        float osc_gain = -25;
-        float osc_fm_freq = 0;
-        float osc_fm_depth = 0;
-
-        WaveType lfo_wavetype = WaveType::SIN;
-        double lfo_freq = 0;
-        float lfo_gain = 0; // linear
-
-        float del_mix = 0;
-    };
-
-    using ChainsParameters = std::array<Parameter, static_cast<int> (NUM_OUTPUT_CHANNELS / 2)>;
-
-    ChainsParameters chain_param;
-
-    static struct Control_limits
+    static struct ControlLimits
     {
         // in JUCE slider setter/getters are expecting double types
         // choicebox expecting int's
@@ -97,8 +75,8 @@ private:
         int osc_waveType_min = 1, osc_waveType_max = 6;
         double osc_freq_min = 0, osc_freq_max = 24000;
         double osc_gain_min = -100, osc_gain_max = 5;
-        double osc_fm_freq_min = 0, osc_fm_freq_max = 10;
-        double osc_fm_depth_min = 0, osc_fm_depth_max = 20;
+        double osc_fm_freq_min = 0, osc_fm_freq_max = 20;
+        double osc_fm_depth_min = 0, osc_fm_depth_max = 10;
 
         int lfo_waveType_min = 1, lfo_waveType_max = 6;
         double lfo_freq_min = 0, lfo_freq_max = 70;
@@ -108,22 +86,35 @@ private:
 
     } ctl_limits;
 
-    Parameter def_param;
+    juce::UndoManager undoManager;
+    // parameters values
+    juce::ValueTree state;
+    // GUI parameters values
+    juce::ValueTree gui_state;
+    // default parameter values
+    juce::ValueTree def_state;
 
     // GUI controllers
+    std::vector<std::unique_ptr<juce::TextButton>> btns;
     std::unique_ptr<ControlComponent> ctlComp;
 
     //==============================================================================
+    void timerCallback() override;
+    juce::var getParamValue (const juce::Identifier& parent, const juce::Identifier& node,
+                             const juce::Identifier& propertie);
+    template <typename T>
+    void setParamValue (const juce::Identifier& parent, const juce::Identifier& node, const juce::Identifier& propertie,
+                        T val);
+    juce::var getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
+                                  const juce::Identifier& node, const juce::Identifier& propertie);
     void changeListenerCallback (juce::ChangeBroadcaster* source) override;
-    void initParameters();
-    void setDefaultParameterValues();
-    void generateRandomParameters();
-
+    void initGuiControls (juce::ValueTree& v);
     template <typename T, typename Func, typename... O>
     void setChainParams (T val, Func f, O*... obj);
-
     template <typename T>
-    void setChainParams (StereoChain* chain, ParamId id, T val);
+    void setChainParams (StereoChain* chain, juce::Identifier comp_id, juce::Identifier propertie, T val);
+    void setDefaultParameterValues();
+    void generateRandomParameters();
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

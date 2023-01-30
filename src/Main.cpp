@@ -35,8 +35,8 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         // This method is where you should put your application's initialisation code..
-
-        mainWindow.reset (new MainWindow (getApplicationName()));
+        root = Helpers::createDefaultTree();
+        mainWindow.reset (new MainWindow (getApplicationName(), root));
     }
 
     void shutdown() override
@@ -69,14 +69,14 @@ public:
     class MainWindow : public juce::DocumentWindow
     {
     public:
-        MainWindow (juce::String name)
+        MainWindow (juce::String name, juce::ValueTree root)
             : DocumentWindow (name,
                               juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (
                                   juce::ResizableWindow::backgroundColourId),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            setContentOwned (new MainComponent (root), true);
 
 #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
@@ -108,6 +108,7 @@ public:
     };
 
 private:
+    juce::ValueTree root;
     std::unique_ptr<MainWindow> mainWindow;
 };
 
