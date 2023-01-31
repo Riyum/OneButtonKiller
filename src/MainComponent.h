@@ -4,7 +4,6 @@
 #include "Osc.h"
 #include "Utils.h"
 #include <JuceHeader.h>
-#include <array>
 #include <memory>
 #include <random>
 #include <vector>
@@ -112,7 +111,7 @@ private:
     template <typename T, typename Func, typename... O>
     void setChainParams (T val, Func f, O*... obj);
     template <typename T>
-    void setChainParams (StereoChain* chain, juce::Identifier comp_id, juce::Identifier propertie, T val);
+    void setChainParams (StereoChain* chain, const juce::Identifier& comp_id, const juce::Identifier& propertie, T val);
     void setDefaultParameterValues();
     void generateRandomParameters();
 

@@ -142,12 +142,10 @@ juce::var MainComponent::getStateParamValue (const juce::ValueTree& v, const juc
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 {
-    // TODO: smooth osc freq change
-
     // DBG ("changeListenerCallback");
     auto comp = dynamic_cast<BaseComp*> (source);
     auto comp_state = comp->getState();
-    auto comp_id = comp->id;
+    auto comp_id = comp_state.getType();
     auto prop = comp->prop;
 
     if (comp_id == IDs::MASTER)
@@ -252,7 +250,6 @@ void MainComponent::initGuiControls (juce::ValueTree& v)
 {
 
     // DBG ("begin initGuiControls");
-    // DBG ("v validation: " << (v.isValid() == true ? "true" : "false"));
     std::vector<std::unique_ptr<BaseComp>> ctl;
 
     // master gain
@@ -389,7 +386,8 @@ void MainComponent::setChainParams (T val, Func f, O*... obj)
 }
 
 template <typename T>
-void MainComponent::setChainParams (StereoChain* chain, juce::Identifier comp_id, juce::Identifier propertie, T val)
+void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& comp_id,
+                                    const juce::Identifier& propertie, T val)
 {
     if (comp_id == IDs::MASTER)
     {
@@ -498,42 +496,33 @@ void MainComponent::setDefaultParameterValues()
 
 void MainComponent::generateRandomParameters()
 {
-    // std::random_device rd;
-    // std::mt19937 gen (rd());
 
-    // std::uniform_int_distribution<> osc_type (ctl_limits.osc_waveType_min, 3);
-    // std::uniform_real_distribution<> osc_freq (ctl_limits.osc_freq_min, ctl_limits.osc_freq_max);
-    // std::uniform_real_distribution<> osc_fm_freq (ctl_limits.osc_fm_freq_min, ctl_limits.osc_fm_freq_max);
-    // std::uniform_real_distribution<> osc_fm_depth (ctl_limits.osc_fm_depth_min, ctl_limits.osc_fm_depth_max);
+    std::random_device rd;
+    std::mt19937 gen (rd());
 
-    // std::uniform_int_distribution<> lfo_type (ctl_limits.lfo_waveType_min, 3);
-    // std::uniform_real_distribution<> lfo_freq (ctl_limits.lfo_freq_min, ctl_limits.lfo_freq_max);
-    // std::uniform_real_distribution<> lfo_gain (ctl_limits.lfo_gain_min, ctl_limits.lfo_gain_max);
+    std::uniform_int_distribution<> osc_type (ctl_limits.osc_waveType_min, 3);
+    std::uniform_real_distribution<> osc_freq (ctl_limits.osc_freq_min, ctl_limits.osc_freq_max);
+    std::uniform_real_distribution<> osc_fm_freq (ctl_limits.osc_fm_freq_min, ctl_limits.osc_fm_freq_max);
+    std::uniform_real_distribution<> osc_fm_depth (ctl_limits.osc_fm_depth_min, ctl_limits.osc_fm_depth_max);
 
-    // ChainsParameters rand;
+    std::uniform_int_distribution<> lfo_type (ctl_limits.lfo_waveType_min, 3);
+    std::uniform_real_distribution<> lfo_freq (ctl_limits.lfo_freq_min, ctl_limits.lfo_freq_max);
+    std::uniform_real_distribution<> lfo_gain (ctl_limits.lfo_gain_min, ctl_limits.lfo_gain_max);
 
-    // for (int i = 0; i < chains.size(); i++)
-    // {
-    //     rand[i].osc_wavetype = static_cast<WaveType> (osc_type (gen));
-    //     rand[i].osc_freq = osc_freq (gen);
-    //     rand[i].osc_fm_freq = osc_fm_freq (gen);
-    //     rand[i].osc_fm_depth = osc_fm_depth (gen);
+    for (auto osc_parameters : gui_state.getChildWithName (IDs::OSC))
+    {
+        osc_parameters.setProperty (IDs::wavetype, osc_type (gen), &undoManager);
+        osc_parameters.setProperty (IDs::freq, osc_freq (gen), &undoManager);
+        osc_parameters.setProperty (IDs::fm_freq, osc_fm_freq (gen), &undoManager);
+        osc_parameters.setProperty (IDs::fm_depth, osc_fm_depth (gen), &undoManager);
+    }
 
-    //     rand[i].lfo_wavetype = static_cast<WaveType> (lfo_type (gen));
-
-    //     rand[i].lfo_freq = lfo_freq (gen);
-
-    //     rand[i].lfo_gain = osc_freq (gen);
-
-    //     setChainParams (&chains[i], ParamId::OSC1_WAVETYPE, rand[i].osc_wavetype);
-    //     setChainParams (&chains[i], ParamId::OSC1_FREQ, rand[i].osc_freq);
-    //     setChainParams (&chains[i], ParamId::OSC1_FM_FREQ, rand[i].osc_fm_freq);
-    //     setChainParams (&chains[i], ParamId::OSC1_FM_DEPTH, rand[i].osc_fm_depth);
-
-    //     setChainParams (&chains[i], ParamId::LFO1_WAVETYPE, rand[i].lfo_wavetype);
-    //     setChainParams (&chains[i], ParamId::LFO1_FREQ, rand[i].lfo_freq);
-    //     setChainParams (&chains[i], ParamId::LFO1_GAIN, rand[i].lfo_gain);
-    // }
+    for (auto lfo_parameters : gui_state.getChildWithName (IDs::LFO))
+    {
+        lfo_parameters.setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
+        lfo_parameters.setProperty (IDs::freq, lfo_freq (gen), &undoManager);
+        lfo_parameters.setProperty (IDs::gain, lfo_gain (gen), &undoManager);
+    }
 }
 
 void MainComponent::paint (juce::Graphics& g)
@@ -546,6 +535,9 @@ void MainComponent::paint (juce::Graphics& g)
 
 void MainComponent::resized()
 {
+
+    // TODO: fix labels not displayed
+
     auto bounds = getLocalBounds();
     // DBG (bounds.getX() << " " << bounds.getY() << " " << bounds.getWidth() << " " << bounds.getHeight());
     // DBG (ctlComp->getBounds().getX() << " " << ctlComp->getBounds().getY());

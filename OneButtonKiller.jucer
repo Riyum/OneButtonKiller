@@ -6,15 +6,15 @@
   <MAINGROUP id="XqkzOp" name="OneButtonKiller">
     <GROUP id="{E316A153-17FD-81AA-87DA-EE039D3D4E83}" name="src">
       <FILE id="LjHQGq" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
+      <FILE id="wYfbIu" name="MainComponent.h" compile="0" resource="0" file="src/MainComponent.h"/>
       <FILE id="Bg6HvT" name="MainComponent.cpp" compile="1" resource="0"
             file="src/MainComponent.cpp"/>
-      <FILE id="wYfbIu" name="MainComponent.h" compile="0" resource="0" file="src/MainComponent.h"/>
-      <FILE id="fE0MaD" name="Identifiers.h" compile="0" resource="0" file="src/Identifiers.h"/>
       <FILE id="IeuObu" name="Utils.h" compile="0" resource="0" file="src/Utils.h"/>
-      <FILE id="olQrca" name="Osc.cpp" compile="1" resource="0" file="src/Osc.cpp"/>
+      <FILE id="S538xE" name="Utils.cpp" compile="1" resource="0" file="src/Utils.cpp"/>
       <FILE id="rRr950" name="Osc.h" compile="0" resource="0" file="src/Osc.h"/>
-      <FILE id="fGyMWz" name="Delay.cpp" compile="1" resource="0" file="src/Delay.cpp"/>
+      <FILE id="olQrca" name="Osc.cpp" compile="1" resource="0" file="src/Osc.cpp"/>
       <FILE id="S4y2qY" name="Delay.h" compile="0" resource="0" file="src/Delay.h"/>
+      <FILE id="fGyMWz" name="Delay.cpp" compile="1" resource="0" file="src/Delay.cpp"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
