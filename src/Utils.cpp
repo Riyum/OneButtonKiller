@@ -2,59 +2,51 @@
 
 juce::ValueTree createDefaultTree()
 {
-
-    float master_gain = 0.7; // linear
-    float chan_gain = -10;   // dB
-
-    WaveType osc_wavetype = WaveType::SIN;
-    double osc_freq = 440;
-    float osc_gain = -25;
-    float osc_fm_freq = 0;
-    float osc_fm_depth = 0;
-
-    WaveType lfo_wavetype = WaveType::SIN;
-    double lfo_freq = 0;
-    float lfo_gain = 0; // linear
-
-    float del_mix = 0;
-
     juce::ValueTree output = {IDs::OUTPUT_GAIN,
                               {},
-                              {{IDs::MASTER, {{IDs::gain, master_gain}}},
-                               {IDs::CHAN1, {{IDs::gain, chan_gain}}},
-                               {IDs::CHAN2, {{IDs::gain, chan_gain}}}}};
+                              {{IDs::MASTER, {{IDs::gain, def_param.master_gain}}},
+                               {IDs::CHAN1, {{IDs::gain, def_param.chan_gain}}},
+                               {IDs::CHAN2, {{IDs::gain, def_param.chan_gain}}}}};
 
     juce::ValueTree osc = {IDs::OSC,
                            {},
                            {
                                {IDs::OSC1,
-                                {{IDs::wavetype, osc_wavetype},
-                                 {IDs::freq, osc_freq},
-                                 {IDs::gain, osc_gain},
-                                 {IDs::fm_freq, osc_fm_freq},
-                                 {IDs::fm_depth, osc_fm_depth}}},
+                                {{IDs::wavetype, def_param.osc_wavetype},
+                                 {IDs::freq, def_param.osc_freq},
+                                 {IDs::gain, def_param.osc_gain},
+                                 {IDs::fm_freq, def_param.osc_fm_freq},
+                                 {IDs::fm_depth, def_param.osc_fm_depth}}},
                                {IDs::OSC2,
-                                {{IDs::wavetype, osc_wavetype},
-                                 {IDs::freq, osc_freq},
-                                 {IDs::gain, osc_gain},
-                                 {IDs::fm_freq, osc_fm_freq},
-                                 {IDs::fm_depth, osc_fm_depth}}},
+                                {{IDs::wavetype, def_param.osc_wavetype},
+                                 {IDs::freq, def_param.osc_freq},
+                                 {IDs::gain, def_param.osc_gain},
+                                 {IDs::fm_freq, def_param.osc_fm_freq},
+                                 {IDs::fm_depth, def_param.osc_fm_depth}}},
                            }};
 
-    juce::ValueTree lfo = {
-        IDs::LFO,
+    juce::ValueTree lfo = {IDs::LFO,
+                           {},
+                           {
+                               {IDs::LFO1,
+                                {{IDs::wavetype, def_param.lfo_wavetype},
+                                 {IDs::freq, def_param.lfo_freq},
+                                 {IDs::gain, def_param.lfo_gain}}},
+                               {IDs::LFO2,
+                                {{IDs::wavetype, def_param.lfo_wavetype},
+                                 {IDs::freq, def_param.lfo_freq},
+                                 {IDs::gain, def_param.lfo_gain}}},
+                           }};
+
+    juce::ValueTree delay = {
+        IDs::DELAY,
         {},
         {
-            {IDs::LFO1, {{IDs::wavetype, lfo_wavetype}, {IDs::freq, lfo_freq}, {IDs::gain, lfo_gain}}},
-            {IDs::LFO2, {{IDs::wavetype, lfo_wavetype}, {IDs::freq, lfo_freq}, {IDs::gain, lfo_gain}}},
+            {IDs::DELAY1,
+             {{IDs::mix, def_param.del_mix}, {IDs::time, def_param.del_time}, {IDs::feedback, def_param.del_feedback}}},
+            {IDs::DELAY2,
+             {{IDs::mix, def_param.del_mix}, {IDs::time, def_param.del_time}, {IDs::feedback, def_param.del_feedback}}},
         }};
-
-    juce::ValueTree delay = {IDs::DELAY,
-                             {},
-                             {
-                                 {IDs::DELAY1, {{IDs::mix, del_mix}}},
-                                 {IDs::DELAY2, {{IDs::mix, del_mix}}},
-                             }};
 
     juce::ValueTree root (IDs::ROOT);
     root.addChild (output, -1, nullptr);
@@ -161,6 +153,35 @@ int ChoiceComp::getCurrentValue() const
 }
 
 //==============================================================================
+LabelComp::LabelComp (const juce::ValueTree& v, const juce::Identifier propertie, juce::UndoManager& um,
+                      const juce::String& labelName)
+    : BaseComp (v, propertie, um, labelName)
+{
+    label.setFont (juce::Font (15, juce::Font::FontStyleFlags::bold | juce::Font::FontStyleFlags::italic));
+    label.setText (labelName, juce::dontSendNotification);
+}
+
+juce::Component* LabelComp::getComponent()
+{
+    return &label;
+}
+
+int LabelComp::getPreferredHeight()
+{
+    return 20;
+}
+int LabelComp::getPreferredWidth()
+{
+    return 100;
+}
+
+juce::String LabelComp::getCurrentValue() const
+{
+
+    return label.getText();
+}
+
+//==============================================================================
 ControlComponent::ControlComponent (std::vector<std::unique_ptr<BaseComp>>& params)
 {
     controls = std::move (params);
@@ -169,7 +190,7 @@ ControlComponent::ControlComponent (std::vector<std::unique_ptr<BaseComp>>& para
     {
         addAndMakeVisible (param->getComponent());
 
-        if (instanceof <juce::TextButton> (param.get()))
+        if (instanceof <LabelComp> (param.get()))
             continue;
 
         std::unique_ptr<juce::Label> paramLabel = std::make_unique<juce::Label> ("", param->name);
@@ -189,9 +210,12 @@ void ControlComponent::resized()
         auto* comp = p->getComponent();
 
         comp->setSize (juce::jmin (bounds.getWidth(), p->getPreferredWidth()), p->getPreferredHeight());
-
         auto compBounds = bounds.removeFromTop (p->getPreferredHeight());
-        comp->setCentrePosition (compBounds.getCentre());
+
+        if (instanceof <LabelComp> (p.get()))
+            comp->setTopLeftPosition (compBounds.getTopLeft());
+        else
+            comp->setCentrePosition (compBounds.getCentre());
     }
 }
 
@@ -203,7 +227,7 @@ int ControlComponent::getWidthNeeded()
         width = std::max (p->getPreferredWidth(), width);
 
     // width + lable_width + gap
-    return width + 10;
+    return width + 100 + 10;
 }
 
 int ControlComponent::getHeightNeeded()

@@ -33,7 +33,7 @@ private:
     // DSP processors
     using Gain = juce::dsp::Gain<float>;
     using OSC = Osc<float>;
-    using DEL = Delay<float>;
+    using DEL = Delay<float, 1>;
 
     enum ProcIdx
     {
@@ -63,35 +63,12 @@ private:
     Osc<float> lfo1;
     Osc<float> lfo2;
 
-    static struct ControlLimits
-    {
-        // in JUCE slider setter/getters are expecting double types
-        // choicebox expecting int's
-
-        double master_min = 0, master_max = 1;
-        double chan_min = -100.0, chan_max = 0;
-
-        int osc_waveType_min = 1, osc_waveType_max = 6;
-        double osc_freq_min = 0, osc_freq_max = 24000;
-        double osc_gain_min = -100, osc_gain_max = 5;
-        double osc_fm_freq_min = 0, osc_fm_freq_max = 20;
-        double osc_fm_depth_min = 0, osc_fm_depth_max = 10;
-
-        int lfo_waveType_min = 1, lfo_waveType_max = 6;
-        double lfo_freq_min = 0, lfo_freq_max = 70;
-        double lfo_gain_min = 0, lfo_gain_max = 1;
-
-        double delay_mix_min = 0, delay_mix_max = 1;
-
-    } ctl_limits;
-
     juce::UndoManager undoManager;
-    // parameters values
+
+    // chain parameters values
     juce::ValueTree state;
     // GUI parameters values
     juce::ValueTree gui_state;
-    // default parameter values
-    juce::ValueTree def_state;
 
     // GUI controllers
     std::vector<std::unique_ptr<juce::TextButton>> btns;

@@ -54,9 +54,8 @@ void DelayLine<Type>::push (Type valueToAdd) noexcept
 template <typename Type, size_t maxNumChannels>
 Delay<Type, maxNumChannels>::Delay()
 {
-    setMaxDelayTime (2.0f);
+    setMaxDelayTime (5.0f);
     setDelayTime (0, 0.7f);
-    setDelayTime (1, 0.5f);
     setWetLevel (0.8f);
     setFeedback (0.5f);
 }
@@ -137,6 +136,14 @@ void Delay<Type, maxNumChannels>::setDelayTime (size_t channel, Type newValue)
 
     updateDelayTime();
 }
+//==============================================================================
+template <typename Type, size_t maxNumChannels>
+void Delay<Type, maxNumChannels>::setDelayTime (Type newValue)
+{
+
+    delayTimes[0] = newValue;
+    updateDelayTime();
+}
 
 //==============================================================================
 template <typename Type, size_t maxNumChannels>
@@ -190,6 +197,7 @@ void Delay<Type, maxNumChannels>::updateDelayTime() noexcept
 }
 
 template class DelayLine<float>;
-template class Delay<float>;
-template void Delay<float>::process<juce::dsp::ProcessContextReplacing<float>> (
+template class Delay<float, 1>;
+// template class Delay<float>;
+template void Delay<float, 1>::process<juce::dsp::ProcessContextReplacing<float>> (
     const juce::dsp::ProcessContextReplacing<float>& context);

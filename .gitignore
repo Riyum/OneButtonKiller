@@ -1,4 +1,3 @@
-.clang-format.close_to_juce_style
 .ccls-cache
 bin/
 builds/

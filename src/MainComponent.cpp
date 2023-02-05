@@ -1,10 +1,7 @@
 #include "MainComponent.h"
 
-// the linker need an explicit definition for the static struct
-MainComponent::ControlLimits MainComponent::ctl_limits;
 //==============================================================================
-MainComponent::MainComponent (juce::ValueTree root)
-    : state (root), gui_state (root.createCopy()), def_state (root.createCopy())
+MainComponent::MainComponent (juce::ValueTree root) : state (root), gui_state (root.createCopy())
 // : adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
     // DBG ("begin constractor");
@@ -25,7 +22,6 @@ MainComponent::MainComponent (juce::ValueTree root)
 
     // addAndMakeVisible (adsc);
 
-    // initialise Parameters GUI component
     initGuiControls (gui_state);
 
     startTimer (500);
@@ -242,6 +238,18 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
             setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
             return;
         }
+        if (prop == IDs::time)
+        {
+            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
+            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
+            return;
+        }
+        if (prop == IDs::feedback)
+        {
+            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
+            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
+            return;
+        }
     }
     // DBG ("end changeListenerCallback");
 }
@@ -254,18 +262,19 @@ void MainComponent::initGuiControls (juce::ValueTree& v)
 
     // master gain
     auto master_gain_node = v.getChildWithName (IDs::OUTPUT_GAIN).getChildWithName (IDs::MASTER);
+    ctl.push_back (std::make_unique<LabelComp> (master_gain_node, IDs::ROOT, undoManager, "Volume"));
     ctl.push_back (std::make_unique<SliderComp> (master_gain_node, IDs::gain, undoManager, "Master",
                                                  juce::Range{ctl_limits.master_min, ctl_limits.master_max}, 1,
                                                  master_gain_node[IDs::gain], "%"));
 
     // channels gain
     auto chan1_gain_node = v.getChildWithName (IDs::OUTPUT_GAIN).getChildWithName (IDs::CHAN1);
-    ctl.push_back (std::make_unique<SliderComp> (chan1_gain_node, IDs::gain, undoManager, "ch1 gain",
+    ctl.push_back (std::make_unique<SliderComp> (chan1_gain_node, IDs::gain, undoManager, "Ch1",
                                                  juce::Range{ctl_limits.chan_min, ctl_limits.chan_max}, 1,
                                                  chan1_gain_node[IDs::gain], "dB"));
 
     auto chan2_gain_node = v.getChildWithName (IDs::OUTPUT_GAIN).getChildWithName (IDs::CHAN2);
-    ctl.push_back (std::make_unique<SliderComp> (chan2_gain_node, IDs::gain, undoManager, "ch2 gain",
+    ctl.push_back (std::make_unique<SliderComp> (chan2_gain_node, IDs::gain, undoManager, "Ch2",
                                                  juce::Range{ctl_limits.chan_min, ctl_limits.chan_max}, 1,
                                                  chan2_gain_node[IDs::gain], "dB"));
 
@@ -336,19 +345,38 @@ void MainComponent::initGuiControls (juce::ValueTree& v)
                                                  lfo2_node[IDs::freq], "Hz"));
 
     ctl.push_back (std::make_unique<SliderComp> (lfo2_node, IDs::gain, undoManager, "Gain",
-                                                 juce::Range{ctl_limits.lfo_gain_min, ctl_limits.lfo_gain_max}, 0.3,
+                                                 juce::Range{ctl_limits.lfo_gain_min, ctl_limits.lfo_gain_max}, 1,
                                                  lfo2_node[IDs::gain]));
 
     // delay
     auto delay1_node = v.getChildWithName (IDs::DELAY).getChildWithName (IDs::DELAY1);
+    ctl.push_back (std::make_unique<LabelComp> (delay1_node, IDs::ROOT, undoManager, "Delay 1"));
+
     ctl.push_back (std::make_unique<SliderComp> (delay1_node, IDs::mix, undoManager, "Dry/wet",
                                                  juce::Range{ctl_limits.delay_mix_min, ctl_limits.delay_mix_max}, 1,
                                                  delay1_node[IDs::mix]));
 
+    ctl.push_back (std::make_unique<SliderComp> (delay1_node, IDs::time, undoManager, "Time",
+                                                 juce::Range{ctl_limits.delay_time_min, ctl_limits.delay_time_max}, 1,
+                                                 delay1_node[IDs::time]));
+
+    ctl.push_back (std::make_unique<SliderComp> (
+        delay1_node, IDs::feedback, undoManager, "Feedback",
+        juce::Range{ctl_limits.delay_feedback_min, ctl_limits.delay_feedback_max}, 1, delay1_node[IDs::feedback]));
+
     auto delay2_node = v.getChildWithName (IDs::DELAY).getChildWithName (IDs::DELAY2);
+    ctl.push_back (std::make_unique<LabelComp> (delay2_node, IDs::ROOT, undoManager, "Delay 2"));
     ctl.push_back (std::make_unique<SliderComp> (delay2_node, IDs::mix, undoManager, "Dry/wet",
                                                  juce::Range{ctl_limits.delay_mix_min, ctl_limits.delay_mix_max}, 1,
                                                  delay2_node[IDs::mix]));
+
+    ctl.push_back (std::make_unique<SliderComp> (delay2_node, IDs::time, undoManager, "Time",
+                                                 juce::Range{ctl_limits.delay_time_min, ctl_limits.delay_time_max}, 1,
+                                                 delay2_node[IDs::time]));
+
+    ctl.push_back (std::make_unique<SliderComp> (
+        delay2_node, IDs::feedback, undoManager, "Feedback",
+        juce::Range{ctl_limits.delay_feedback_min, ctl_limits.delay_feedback_max}, 1, delay2_node[IDs::feedback]));
 
     for (auto& p : ctl)
         p->addChangeListener (this);
@@ -367,8 +395,6 @@ void MainComponent::initGuiControls (juce::ValueTree& v)
 
     for (auto& b : btns)
         addAndMakeVisible (b.get());
-
-    // resized();
     // DBG ("end initGuiControls");
 }
 
@@ -446,57 +472,58 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
     if (comp_id == IDs::DELAY)
     {
-        chain->first->get<ProcIdx::delIdx>().setWetLevel (val);
-        chain->second->get<ProcIdx::delIdx>().setWetLevel (val);
-        return;
+        if (propertie == IDs::mix)
+        {
+            chain->first->get<ProcIdx::delIdx>().setWetLevel (val);
+            chain->second->get<ProcIdx::delIdx>().setWetLevel (val);
+            return;
+        }
+        if (propertie == IDs::time)
+        {
+            chain->first->get<ProcIdx::delIdx>().setDelayTime (val);
+            chain->second->get<ProcIdx::delIdx>().setDelayTime (static_cast<double> (val) + 0.2);
+            return;
+        }
+        if (propertie == IDs::feedback)
+        {
+            chain->first->get<ProcIdx::delIdx>().setFeedback (val);
+            chain->second->get<ProcIdx::delIdx>().setFeedback (val);
+            return;
+        }
     }
 }
 
 void MainComponent::setDefaultParameterValues()
 {
     // DBG ("begin setDefaultParameterValues");
-    float master_gain = static_cast<float> (getStateParamValue (def_state, IDs::OUTPUT_GAIN, IDs::MASTER, IDs::gain));
-    float chan_gain = static_cast<float> (getStateParamValue (def_state, IDs::OUTPUT_GAIN, IDs::CHAN1, IDs::gain));
-
-    WaveType osc_wave = static_cast<WaveType> ((int)getStateParamValue (def_state, IDs::OSC, IDs::OSC1, IDs::wavetype));
-    double osc_freq = getStateParamValue (def_state, IDs::OSC, IDs::OSC1, IDs::freq);
-    float osc_gain = getStateParamValue (def_state, IDs::OSC, IDs::OSC1, IDs::gain);
-    double osc_fm_freq = getStateParamValue (def_state, IDs::OSC, IDs::OSC1, IDs::fm_freq);
-    float osc_fm_depth = getStateParamValue (def_state, IDs::OSC, IDs::OSC1, IDs::fm_depth);
-
-    WaveType lfo_wave = static_cast<WaveType> ((int)getStateParamValue (def_state, IDs::LFO, IDs::LFO1, IDs::wavetype));
-    double lfo_freq = getStateParamValue (def_state, IDs::LFO, IDs::LFO1, IDs::freq);
-    float lfo_gain = getStateParamValue (def_state, IDs::LFO, IDs::LFO1, IDs::gain);
-
-    float del_mix = getStateParamValue (def_state, IDs::DELAY, IDs::DELAY1, IDs::gain);
-
     // master gain
-    setChainParams (nullptr, IDs::MASTER, juce::Identifier(), master_gain);
+    setChainParams (nullptr, IDs::MASTER, juce::Identifier(), def_param.master_gain);
     // channels gain
-    setChainParams (&chains[0], IDs::CHAN1, juce::Identifier(), chan_gain);
-    setChainParams (&chains[1], IDs::CHAN2, juce::Identifier(), chan_gain);
+    setChainParams (&chains[0], IDs::CHAN1, juce::Identifier(), def_param.chan_gain);
+    setChainParams (&chains[1], IDs::CHAN2, juce::Identifier(), def_param.chan_gain);
 
     for (size_t i = 0; i < chains.size(); i++)
     {
         // OSC
-        setChainParams (&chains[i], IDs::OSC, IDs::wavetype, osc_wave);
-        setChainParams (&chains[i], IDs::OSC, IDs::freq, osc_freq);
-        setChainParams (&chains[i], IDs::OSC, IDs::gain, osc_gain);
-        setChainParams (&chains[i], IDs::OSC, IDs::fm_freq, osc_fm_freq);
-        setChainParams (&chains[i], IDs::OSC, IDs::fm_depth, osc_fm_depth);
+        setChainParams (&chains[i], IDs::OSC, IDs::wavetype, def_param.osc_wavetype);
+        setChainParams (&chains[i], IDs::OSC, IDs::freq, def_param.osc_freq);
+        setChainParams (&chains[i], IDs::OSC, IDs::gain, def_param.osc_gain);
+        setChainParams (&chains[i], IDs::OSC, IDs::fm_freq, def_param.osc_fm_freq);
+        setChainParams (&chains[i], IDs::OSC, IDs::fm_depth, def_param.osc_fm_depth);
         // LFO
-        setChainParams (&chains[i], IDs::LFO, IDs::wavetype, lfo_wave);
-        setChainParams (&chains[i], IDs::LFO, IDs::freq, lfo_freq);
-        setChainParams (&chains[i], IDs::LFO, IDs::gain, lfo_gain);
+        setChainParams (&chains[i], IDs::LFO, IDs::wavetype, def_param.lfo_wavetype);
+        setChainParams (&chains[i], IDs::LFO, IDs::freq, def_param.lfo_freq);
+        setChainParams (&chains[i], IDs::LFO, IDs::gain, def_param.lfo_gain);
         // delay
-        setChainParams (&chains[i], IDs::DELAY, IDs::mix, del_mix);
+        setChainParams (&chains[i], IDs::DELAY, IDs::mix, def_param.del_mix);
+        setChainParams (&chains[i], IDs::DELAY, IDs::time, def_param.del_time);
+        setChainParams (&chains[i], IDs::DELAY, IDs::feedback, def_param.del_feedback);
     }
     // DBG ("end setDefaultParameterValues");
 }
 
 void MainComponent::generateRandomParameters()
 {
-
     std::random_device rd;
     std::mt19937 gen (rd());
 
@@ -507,7 +534,7 @@ void MainComponent::generateRandomParameters()
 
     std::uniform_int_distribution<> lfo_type (ctl_limits.lfo_waveType_min, 3);
     std::uniform_real_distribution<> lfo_freq (ctl_limits.lfo_freq_min, ctl_limits.lfo_freq_max);
-    std::uniform_real_distribution<> lfo_gain (ctl_limits.lfo_gain_min, ctl_limits.lfo_gain_max);
+    std::uniform_real_distribution<> lfo_gain (ctl_limits.lfo_gain_min, percentageFrom (30, ctl_limits.lfo_gain_max));
 
     for (auto osc_parameters : gui_state.getChildWithName (IDs::OSC))
     {
@@ -529,26 +556,25 @@ void MainComponent::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
     // You can add your drawing code here!
 }
 
 void MainComponent::resized()
 {
-
-    // TODO: fix labels not displayed
-
     auto bounds = getLocalBounds();
-    // DBG (bounds.getX() << " " << bounds.getY() << " " << bounds.getWidth() << " " << bounds.getHeight());
-    // DBG (ctlComp->getBounds().getX() << " " << ctlComp->getBounds().getY());
-    int i = bounds.getX();
-    for (auto& b : btns)
+    auto btnBounds = bounds.removeFromTop (30);
+
+    const int btn_height = 20;
+    const int gap = 3;
+
+    for (auto&& b : btns)
     {
-        b->setBounds (i + 5, bounds.getY() + 5, b->getBestWidthForHeight (20), 20);
-        i += b->getBestWidthForHeight (20) + 6;
+        b->setSize (b->getBestWidthForHeight (btn_height), btn_height);
+        auto pos = btnBounds.removeFromLeft (b->getBestWidthForHeight (btn_height + gap)).getCentre();
+        b->setCentrePosition (pos);
     }
 
     if (ctlComp.get() != nullptr)
-        ctlComp->setBounds (5, 25, ctlComp->getWidthNeeded(), ctlComp->getHeightNeeded());
+        ctlComp->setBounds (bounds.removeFromTop (ctlComp->getHeightNeeded()));
     // ctlComp->setBounds (bounds.removeFromTop (ctlComp->getHeightNeeded()).reduced (20, 0));
 }

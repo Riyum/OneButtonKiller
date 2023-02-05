@@ -31,6 +31,7 @@ public:
     void setFeedback (Type newValue) noexcept;
     void setWetLevel (Type newValue) noexcept;
     void setDelayTime (size_t channel, Type newValue);
+    void setDelayTime (Type newValue);
     template <typename ProcessContext>
     void process (const ProcessContext& context) noexcept;
 
