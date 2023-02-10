@@ -76,6 +76,7 @@ juce::UndoManager* BaseComp::getUndoManager() const
 }
 void BaseComp::valueTreePropertyChanged (juce::ValueTree& v, const juce::Identifier& p)
 {
+    juce::ignoreUnused (v);
     if (prop == p)
     {
         sendChangeMessage();
@@ -94,6 +95,8 @@ SliderComp::SliderComp (const juce::ValueTree& v, const juce::Identifier propert
     : BaseComp (v, propertie, um, labelName)
 {
     slider.setRange (range.getStart(), range.getEnd(), 0.001);
+    slider.setSliderStyle (juce::Slider::SliderStyle::Rotary);
+    slider.setTextBoxStyle (juce::Slider::TextEntryBoxPosition::TextBoxBelow, true, 60, 20);
     slider.setSkewFactor (skew);
     slider.setValue (initialValue);
 
@@ -110,11 +113,11 @@ juce::Component* SliderComp::getComponent()
 
 int SliderComp::getPreferredHeight()
 {
-    return 40;
+    return 70;
 }
 int SliderComp::getPreferredWidth()
 {
-    return 500;
+    return 70;
 }
 
 double SliderComp::getCurrentValue() const
@@ -144,7 +147,7 @@ int ChoiceComp::getPreferredHeight()
 }
 int ChoiceComp::getPreferredWidth()
 {
-    return 250;
+    return 100;
 }
 
 int ChoiceComp::getCurrentValue() const
@@ -194,8 +197,16 @@ ControlComponent::ControlComponent (std::vector<std::unique_ptr<BaseComp>>& para
             continue;
 
         std::unique_ptr<juce::Label> paramLabel = std::make_unique<juce::Label> ("", param->name);
-        paramLabel->attachToComponent (param->getComponent(), true);
-        paramLabel->setJustificationType (juce::Justification::centredLeft);
+        if (instanceof <SliderComp> (param.get()))
+        {
+            paramLabel->attachToComponent (param->getComponent(), false);
+            paramLabel->setJustificationType (juce::Justification::centredBottom);
+        }
+        else
+        {
+            paramLabel->attachToComponent (param->getComponent(), true);
+            paramLabel->setJustificationType (juce::Justification::centredLeft);
+        }
         addAndMakeVisible (paramLabel.get());
         labels.push_back (std::move (paramLabel));
     }
@@ -203,41 +214,64 @@ ControlComponent::ControlComponent (std::vector<std::unique_ptr<BaseComp>>& para
 
 void ControlComponent::resized()
 {
-    auto bounds = getLocalBounds();
+    auto bounds = getLocalBounds(), slider_bounds = bounds;
+    juce::Rectangle<int> compBounds;
+    int non_slider_gap = 30, slider_gap = 90;
 
     for (auto&& p : controls)
     {
         auto* comp = p->getComponent();
 
         comp->setSize (juce::jmin (bounds.getWidth(), p->getPreferredWidth()), p->getPreferredHeight());
-        auto compBounds = bounds.removeFromTop (p->getPreferredHeight());
 
-        if (instanceof <LabelComp> (p.get()))
-            comp->setTopLeftPosition (compBounds.getTopLeft());
+        if (! instanceof <SliderComp> (p.get()))
+        {
+            compBounds = bounds.removeFromTop (p->getPreferredHeight() + non_slider_gap);
+            slider_bounds = bounds.removeFromTop (slider_gap);
+        }
         else
-            comp->setCentrePosition (compBounds.getCentre());
+            compBounds = slider_bounds.removeFromLeft (p->getPreferredWidth());
+
+        if (instanceof <ChoiceComp> (p.get()))
+            comp->setTopLeftPosition (compBounds.getTopLeft().translated (p->name.length() * 8, 0));
+        else
+            comp->setTopLeftPosition (compBounds.getTopLeft());
+
+        // if (instanceof <LabelComp> (p.get()))
+        //     comp->setTopLeftPosition (compBounds.getTopLeft());
+        // else
+        //     comp->setCentrePosition (compBounds.getCentre());
     }
 }
 
 int ControlComponent::getWidthNeeded()
 {
-    auto width = 0;
+    return 4 * 70;
 
-    for (auto&& p : controls)
-        width = std::max (p->getPreferredWidth(), width);
+    // auto width = 0;
+
+    // for (auto&& p : controls)
+    //     width = std::max (p->getPreferredWidth(), width);
 
     // width + lable_width + gap
-    return width + 100 + 10;
+    // return width + 100 + 10;
 }
 
 int ControlComponent::getHeightNeeded()
 {
-    auto height = 0;
+    // (slider height + slider box height + label height) * number of components that have sliders
+    int slider = (70 + 20 + 20) * 7;
+    int combox = 25 * 4;
+    int label = 20 * 3;
 
-    for (auto&& p : controls)
-        height += p->getPreferredHeight();
+    return slider + combox + label + 60;
 
-    return height + 10;
+    // auto height = 0;
+
+    // for (auto&& p : controls)
+    //     height += p->getPreferredHeight();
+
+    // return height + 10;
 }
 
 //==============================================================================

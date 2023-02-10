@@ -80,7 +80,8 @@ void Osc<Type>::reset() noexcept
 
 //==============================================================================
 template <typename Type>
-void Osc<Type>::process (const juce::dsp::ProcessContextReplacing<Type>& context) noexcept
+template <typename ProcessContext>
+void Osc<Type>::process (const ProcessContext& context) noexcept
 {
     auto& inputBlock = context.getInputBlock();
     auto& outputBlock = context.getOutputBlock();
@@ -94,8 +95,7 @@ void Osc<Type>::process (const juce::dsp::ProcessContextReplacing<Type>& context
 
         for (size_t i = 0; i < numSamples; ++i)
         {
-            auto freq = pc.template get<oscIdx>().getFrequency();
-            pc.template get<oscIdx>().setFrequency (freq + fm.getFrequency() * fm_depth);
+            pc.template get<oscIdx>().setFrequency (pc.template get<oscIdx>().getFrequency() + fm_freq * fm_depth);
             output[i] = pc.template get<oscIdx>().processSample (input[i]);
         }
     }
@@ -113,6 +113,7 @@ void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
     pc.template get<gainIdx>().setGainDecibels (-100.0);
 
     fm.initialise ([] (float x) { return std::sin (x); });
+    fm_freq = 0;
     fm_depth = 0;
 }
 
@@ -121,16 +122,18 @@ template <typename Type>
 void Osc<Type>::setFmFreq (const Type freq)
 {
     fm.setFrequency (freq);
+    fm_freq = freq;
 }
 
 //==============================================================================
 template <typename Type>
-void Osc<Type>::setFmDepth (const float depth)
+void Osc<Type>::setFmDepth (const Type depth)
 {
     fm_depth = depth;
 }
 
-// Explicit template instantiations to fix linking errors
-// https://www.cs.technion.ac.il/users/yechiel/c++-faq/separate-template-class-defn-from-decl.html
+// Explicit template instantiations to satisfy the linker
 
 template class Osc<float>;
+template void Osc<float>::process<juce::dsp::ProcessContextReplacing<float>> (
+    const juce::dsp::ProcessContextReplacing<float>& context);

@@ -55,7 +55,7 @@ private:
     using StereoBlock = std::pair<juce::dsp::AudioBlock<float>, juce::dsp::AudioBlock<float>>;
     std::vector<StereoBlock> audio_blocks;
 
-    // LFO's, declared outside of the chain processor
+    // LFO's
     static constexpr float max_osc_freq = 22000.f;
     static constexpr size_t lfoUpdateRate = 100; // every 100 samples
     size_t lfoUpdateCounter = lfoUpdateRate;

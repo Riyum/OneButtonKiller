@@ -4,7 +4,6 @@
 MainComponent::MainComponent (juce::ValueTree root) : state (root), gui_state (root.createCopy())
 // : adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
-    // DBG ("begin constractor");
     for (int i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
         chains.push_back (std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>()));
 
@@ -26,8 +25,7 @@ MainComponent::MainComponent (juce::ValueTree root) : state (root), gui_state (r
 
     startTimer (500);
 
-    setSize (ctlComp.get()->getWidthNeeded() + 10, ctlComp.get()->getHeightNeeded() + 10 + 20);
-    // DBG ("end constractor");
+    setSize (ctlComp.get()->getWidthNeeded() + 60, ctlComp.get()->getHeightNeeded() + 60);
 }
 
 MainComponent::~MainComponent()
@@ -39,7 +37,6 @@ MainComponent::~MainComponent()
 //==============================================================================
 void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRate)
 {
-    // DBG ("begin prepareToPlay");
     juce::dsp::ProcessSpec spec;
 
     spec.sampleRate = sampleRate;
@@ -56,7 +53,6 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
     lfo2.prepare ({spec.sampleRate / lfoUpdateRate, spec.maximumBlockSize, spec.numChannels});
 
     setDefaultParameterValues();
-    // DBG ("end prepareToPlay");
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
@@ -119,7 +115,6 @@ void MainComponent::timerCallback()
 juce::var MainComponent::getParamValue (const juce::Identifier& parent, const juce::Identifier& node,
                                         const juce::Identifier& propertie)
 {
-
     return state.getChildWithName (parent).getChildWithName (node).getProperty (propertie);
 }
 
@@ -138,126 +133,68 @@ juce::var MainComponent::getStateParamValue (const juce::ValueTree& v, const juc
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 {
-    // DBG ("changeListenerCallback");
     auto comp = dynamic_cast<BaseComp*> (source);
     auto comp_state = comp->getState();
+    auto comp_type = comp_state.getParent().getType();
     auto comp_id = comp_state.getType();
     auto prop = comp->prop;
 
-    if (comp_id == IDs::MASTER)
+    if (comp_type == IDs::OUTPUT_GAIN)
     {
-        setParamValue (IDs::OUTPUT_GAIN, comp_id, prop, comp_state[prop]);
-        setChainParams (nullptr, comp_id, prop, getParamValue (IDs::OUTPUT_GAIN, comp_id, prop));
-        return;
-    }
-
-    if (comp_id == IDs::CHAN1 || comp_id == IDs::CHAN2)
-    {
+        setParamValue (comp_type, comp_id, prop, comp_state[prop]);
+        if (comp_id == IDs::MASTER)
+        {
+            setChainParams (nullptr, comp_id, prop, getParamValue (comp_type, comp_id, prop));
+            return;
+        }
         const auto& chain = comp_id == IDs::CHAN1 ? &chains[0] : &chains[1];
-        setParamValue (IDs::OUTPUT_GAIN, comp_id, prop, comp_state[prop]);
-        setChainParams (chain, comp_id, prop, getParamValue (IDs::OUTPUT_GAIN, comp_id, prop));
+        setChainParams (chain, comp_id, prop, getParamValue (comp_type, comp_id, prop));
         return;
     }
 
-    if (comp_id == IDs::OSC1 || comp_id == IDs::OSC2)
+    if (comp_type == IDs::OSC)
     {
-        auto comp_type = IDs::OSC;
+        setParamValue (comp_type, comp_id, prop, comp_state[prop]);
         const auto& chain = comp_id == IDs::OSC1 ? &chains[0] : &chains[1];
-
-        if (prop == IDs::wavetype)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
-
-        if (prop == IDs::freq)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
-
-        if (prop == IDs::gain)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
-
-        if (prop == IDs::fm_freq)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
-
-        if (prop == IDs::fm_depth)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
+        setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
+        return;
     }
 
-    if (comp_id == IDs::LFO1 || comp_id == IDs::LFO2)
+    if (comp_type == IDs::LFO)
     {
-        auto comp_type = IDs::LFO;
+        setParamValue (comp_type, comp_id, prop, comp_state[prop]);
         auto& lfo = comp_id == IDs::LFO1 ? lfo1 : lfo2;
 
         if (prop == IDs::wavetype)
         {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
             lfo.setWaveType (static_cast<WaveType> ((int)getParamValue (comp_type, comp_id, prop)));
             return;
         }
 
         if (prop == IDs::freq)
         {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
             lfo.setFrequency (getParamValue (comp_type, comp_id, prop));
             return;
         }
 
         if (prop == IDs::gain)
         {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
             lfo.setGainLinear (getParamValue (comp_type, comp_id, prop));
             return;
         }
     }
 
-    if (comp_id == IDs::DELAY1 || comp_id == IDs::DELAY2)
+    if (comp_type == IDs::DELAY)
     {
-        auto comp_type = IDs::DELAY;
+        setParamValue (comp_type, comp_id, prop, comp_state[prop]);
         const auto& chain = comp_id == IDs::DELAY1 ? &chains[0] : &chains[1];
-
-        if (prop == IDs::mix)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
-        if (prop == IDs::time)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
-        if (prop == IDs::feedback)
-        {
-            setParamValue (comp_type, comp_id, prop, comp_state[prop]);
-            setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
-            return;
-        }
+        setChainParams (chain, comp_type, prop, getParamValue (comp_type, comp_id, prop));
     }
-    // DBG ("end changeListenerCallback");
 }
 
 void MainComponent::initGuiControls (juce::ValueTree& v)
 {
 
-    // DBG ("begin initGuiControls");
     std::vector<std::unique_ptr<BaseComp>> ctl;
 
     // master gain
@@ -395,19 +332,11 @@ void MainComponent::initGuiControls (juce::ValueTree& v)
 
     for (auto& b : btns)
         addAndMakeVisible (b.get());
-    // DBG ("end initGuiControls");
 }
 
 template <typename T, typename Func, typename... O>
 void MainComponent::setChainParams (T val, Func f, O*... obj)
 {
-    /*
-    execute f on the obj with the argument val
-        Args:
-        val = argument for f
-        f = function reference
-        obj = an instance of the object to perform the function on
-    */
     (..., (obj->*f) (val));
 }
 
@@ -495,7 +424,6 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
 void MainComponent::setDefaultParameterValues()
 {
-    // DBG ("begin setDefaultParameterValues");
     // master gain
     setChainParams (nullptr, IDs::MASTER, juce::Identifier(), def_param.master_gain);
     // channels gain
@@ -519,7 +447,6 @@ void MainComponent::setDefaultParameterValues()
         setChainParams (&chains[i], IDs::DELAY, IDs::time, def_param.del_time);
         setChainParams (&chains[i], IDs::DELAY, IDs::feedback, def_param.del_feedback);
     }
-    // DBG ("end setDefaultParameterValues");
 }
 
 void MainComponent::generateRandomParameters()
@@ -575,6 +502,5 @@ void MainComponent::resized()
     }
 
     if (ctlComp.get() != nullptr)
-        ctlComp->setBounds (bounds.removeFromTop (ctlComp->getHeightNeeded()));
-    // ctlComp->setBounds (bounds.removeFromTop (ctlComp->getHeightNeeded()).reduced (20, 0));
+        ctlComp->setBounds (bounds.removeFromTop (ctlComp->getHeightNeeded()).reduced (20, 5));
 }

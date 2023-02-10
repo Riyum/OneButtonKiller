@@ -17,11 +17,11 @@ to achieve this, I intend to add more component types, increase their quantity, 
 The user is presented with a simple GUI interface with the following controls:
 
 - The random parameters generator button (The killer button)
-- Undo \ Redo buttons
+- Undo / Redo buttons
 - Gain: master, channels
 - Oscillator: wave type, gain, frequency, FM frequency, FM depth
 - LFO: wave type, frequency, depth
-- Delay: wet \ dry mix
+- Delay: wet / dry mix
 
 It is intended to be a standalone application, so there is no VST version.
 
