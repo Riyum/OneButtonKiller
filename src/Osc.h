@@ -29,13 +29,11 @@ public:
     void process (const ProcessContext& context) noexcept;
     void prepare (const juce::dsp::ProcessSpec& spec);
 
-    void hello();
-
 private:
-    enum
+    enum ProcIdx
     {
-        oscIdx,
-        gainIdx,
+        osc,
+        gain,
     };
 
     juce::dsp::ProcessorChain<juce::dsp::Oscillator<Type>, juce::dsp::Gain<Type>> pc;

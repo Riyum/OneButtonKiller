@@ -7,9 +7,9 @@ OneButtonKiller is an audio instrument, currently with the following components:
 
 | quantity   | component   |
 -------------|--------------
-| 2          | Oscillator  |
-| 2          | LFO         |
-| 2          | Delay       |
+| 4          | Oscillator  |
+| 4          | LFO         |
+| 4          | Delay       |
 
 The goal is to create a program that successfully generates a (random!) complex sound patterns with just one button.  
 to achieve this, I intend to add more component types, increase their quantity, add signal routing capabilities, and much more.
@@ -21,7 +21,7 @@ The user is presented with a simple GUI interface with the following controls:
 - Gain: master, channels
 - Oscillator: wave type, gain, frequency, FM frequency, FM depth
 - LFO: wave type, frequency, depth
-- Delay: wet / dry mix
+- Delay: wet / dry mix, time, feedback
 
 It is intended to be a standalone application, so there is no VST version.
 

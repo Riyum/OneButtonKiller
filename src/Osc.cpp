@@ -10,7 +10,7 @@ Osc<Type>::Osc()
 template <typename Type>
 void Osc<Type>::setWaveType (WaveType choice)
 {
-    auto& osc = pc.template get<oscIdx>();
+    auto& osc = pc.template get<ProcIdx::osc>();
 
     switch (choice)
     {
@@ -47,28 +47,28 @@ void Osc<Type>::setWaveType (WaveType choice)
 template <typename Type>
 void Osc<Type>::setFrequency (Type newValue)
 {
-    pc.template get<oscIdx>().setFrequency (newValue);
+    pc.template get<ProcIdx::osc>().setFrequency (newValue);
 }
 
 //==============================================================================
 template <typename Type>
 void Osc<Type>::setGainDecibels (Type newValue)
 {
-    pc.template get<gainIdx>().setGainDecibels (newValue);
+    pc.template get<ProcIdx::gain>().setGainDecibels (newValue);
 }
 
 //==============================================================================
 template <typename Type>
 void Osc<Type>::setGainLinear (Type newValue)
 {
-    pc.template get<gainIdx>().setGainLinear (newValue);
+    pc.template get<ProcIdx::gain>().setGainLinear (newValue);
 }
 
 //==============================================================================
 template <typename Type>
 Type Osc<Type>::processSample (Type input)
 {
-    return pc.template get<oscIdx>().processSample (input);
+    return pc.template get<ProcIdx::osc>().processSample (input);
 }
 
 //==============================================================================
@@ -95,11 +95,11 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
 
         for (size_t i = 0; i < numSamples; ++i)
         {
-            pc.template get<oscIdx>().setFrequency (pc.template get<oscIdx>().getFrequency() + fm_freq * fm_depth);
-            output[i] = pc.template get<oscIdx>().processSample (input[i]);
+            pc.template get<osc>().setFrequency (pc.template get<osc>().getFrequency() + fm_freq * fm_depth);
+            output[i] = pc.template get<osc>().processSample (input[i]);
         }
     }
-    pc.template get<gainIdx>().process (context);
+    pc.template get<ProcIdx::gain>().process (context);
 }
 
 //==============================================================================
@@ -109,8 +109,8 @@ void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
     pc.prepare (spec);
     fm.prepare (spec);
 
-    pc.template get<oscIdx>().initialise ([] (float x) { return std::sin (x); });
-    pc.template get<gainIdx>().setGainDecibels (-100.0);
+    pc.template get<osc>().initialise ([] (float x) { return std::sin (x); });
+    pc.template get<ProcIdx::gain>().setGainDecibels (-100.0);
 
     fm.initialise ([] (float x) { return std::sin (x); });
     fm_freq = 0;

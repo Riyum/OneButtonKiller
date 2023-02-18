@@ -35,8 +35,10 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         // This method is where you should put your application's initialisation code..
-        root = createDefaultTree();
-        mainWindow.reset (new MainWindow (getApplicationName(), root));
+        juce::ignoreUnused (commandLine);
+        state = createDefaultTree();
+        selectors_state = createSelectorsTree();
+        mainWindow.reset (new MainWindow (getApplicationName(), state, selectors_state));
     }
 
     void shutdown() override
@@ -56,6 +58,7 @@ public:
 
     void anotherInstanceStarted (const juce::String& commandLine) override
     {
+        juce::ignoreUnused (commandLine);
         // When another instance of the app is launched while this one is running,
         // this method is invoked, and the commandLine parameter tells you what
         // the other instance's command-line arguments were.
@@ -69,14 +72,14 @@ public:
     class MainWindow : public juce::DocumentWindow
     {
     public:
-        MainWindow (juce::String name, juce::ValueTree root)
+        MainWindow (juce::String name, juce::ValueTree state, juce::ValueTree selectors_state)
             : DocumentWindow (name,
                               juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (
                                   juce::ResizableWindow::backgroundColourId),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent (root), true);
+            setContentOwned (new MainComponent (state, selectors_state), true);
 
 #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
@@ -108,7 +111,8 @@ public:
     };
 
 private:
-    juce::ValueTree root;
+    juce::ValueTree state;
+    juce::ValueTree selectors_state;
     std::unique_ptr<MainWindow> mainWindow;
 };
 

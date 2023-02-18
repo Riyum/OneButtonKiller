@@ -5,10 +5,18 @@
               companyName="Darkatnya">
   <MAINGROUP id="XqkzOp" name="OneButtonKiller">
     <GROUP id="{E316A153-17FD-81AA-87DA-EE039D3D4E83}" name="src">
+      <FILE id="lhsvy4" name="Constants.h" compile="0" resource="0" file="src/Constants.h"/>
       <FILE id="LjHQGq" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
       <FILE id="wYfbIu" name="MainComponent.h" compile="0" resource="0" file="src/MainComponent.h"/>
       <FILE id="Bg6HvT" name="MainComponent.cpp" compile="1" resource="0"
             file="src/MainComponent.cpp"/>
+      <FILE id="YhyuUb" name="ComponentWrappers.cpp" compile="1" resource="0"
+            file="src/ComponentWrappers.cpp"/>
+      <FILE id="mGmwva" name="ComponentWrappers.h" compile="0" resource="0"
+            file="src/ComponentWrappers.h"/>
+      <FILE id="GvkWU5" name="GuiComponents.cpp" compile="1" resource="0"
+            file="src/GuiComponents.cpp"/>
+      <FILE id="aELIqj" name="GuiComponents.h" compile="0" resource="0" file="src/GuiComponents.h"/>
       <FILE id="IeuObu" name="Utils.h" compile="0" resource="0" file="src/Utils.h"/>
       <FILE id="S538xE" name="Utils.cpp" compile="1" resource="0" file="src/Utils.cpp"/>
       <FILE id="rRr950" name="Osc.h" compile="0" resource="0" file="src/Osc.h"/>
