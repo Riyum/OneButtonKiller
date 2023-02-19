@@ -7,13 +7,18 @@
 #include "Osc.h"
 #include "Utils.h"
 #include <JuceHeader.h>
-// #include <algorithm>
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <random>
 #include <vector>
 
-class MainComponent : public juce::AudioAppComponent, public juce::ChangeListener, private juce::Timer
+// TODO: add reset to defaults button
+
+class MainComponent : public juce::AudioAppComponent,
+                      public juce::ChangeListener, // listening to the state envtes
+                      private juce::Timer,         // triggering the undo managger beginNewTransaction()
+                      public juce::KeyListener     // add keyboard events to the app
 {
 public:
     //==============================================================================
@@ -25,27 +30,31 @@ public:
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
     void releaseResources() override;
 
+    using juce::AudioAppComponent::keyPressed;
+    using juce::AudioAppComponent::keyStateChanged;
+    bool keyPressed (const juce::KeyPress& key, juce::Component* originatingComponent) override;
+    bool keyStateChanged (bool isKeyDown, juce::Component* originatingComponent) override;
     //==============================================================================
     void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:
     //==============================================================================
-    using Gain = juce::dsp::Gain<float>;
-    using OSC = Osc<float>;
-    using DEL = Delay<float, 1>;
+    using _Gain = juce::dsp::Gain<float>;
+    using _OSC = Osc<float>;
+    using _DEL = Delay<float, 1>;
 
     enum ProcIdx
     {
-        osc,
-        del,
-        chanGain,
-        masterGain
+        OSC,
+        DEL,
+        CHAN_GAIN,
+        MASTER_GAIN
     };
 
     // Chain definition
     // signal flow: ... ---> Gain (channel) ---> Gain (master) ----> out
-    using Chain = juce::dsp::ProcessorChain<OSC, DEL, Gain, Gain>;
+    using Chain = juce::dsp::ProcessorChain<_OSC, _DEL, _Gain, _Gain>;
 
     // we need two chains for each stereo output channel
     using StereoChain = std::pair<std::unique_ptr<Chain>, std::unique_ptr<Chain>>;
@@ -59,7 +68,10 @@ private:
     std::array<Osc<float>, NUM_OUTPUT_CHANNELS / 2> lfo;
 
     juce::ValueTree state;
+    juce::ValueTree selectors_state;
     juce::UndoManager undoManager;
+
+    bool osc_key_on = false;
 
     // GUI controllers
     std::unique_ptr<ButtonsGui> btn_comp;
@@ -67,12 +79,12 @@ private:
     std::array<std::unique_ptr<OscGui>, NUM_OUTPUT_CHANNELS / 4> osc_comp;
     std::array<std::unique_ptr<LfoGui>, NUM_OUTPUT_CHANNELS / 4> lfo_comp;
     std::array<std::unique_ptr<DelayGui>, NUM_OUTPUT_CHANNELS / 4> del_comp;
-
     // juce::AudioDeviceSelectorComponent adsc;
 
     //==============================================================================
     void timerCallback() override;
     void changeListenerCallback (juce::ChangeBroadcaster* source) override;
+
     void initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs);
 
     juce::var getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
@@ -93,6 +105,8 @@ private:
     int getComponentHeight (const std::unique_ptr<T>& comp) const;
 
     void generateRandomParameters();
+    void oscOn();
+    void oscOff();
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

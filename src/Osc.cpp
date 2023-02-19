@@ -1,16 +1,14 @@
 #include "Osc.h"
 
-//==============================================================================
 template <typename Type>
 Osc<Type>::Osc()
 {
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::setWaveType (WaveType choice)
 {
-    auto& osc = pc.template get<ProcIdx::osc>();
+    auto& osc = pc.template get<ProcIdx::OSC>();
 
     switch (choice)
     {
@@ -43,46 +41,53 @@ void Osc<Type>::setWaveType (WaveType choice)
         return;
     }
 }
-//==============================================================================
+
 template <typename Type>
 void Osc<Type>::setFrequency (Type newValue)
 {
-    pc.template get<ProcIdx::osc>().setFrequency (newValue);
+    pc.template get<ProcIdx::OSC>().setFrequency (newValue);
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::setGainDecibels (Type newValue)
 {
-    pc.template get<ProcIdx::gain>().setGainDecibels (newValue);
+    pc.template get<ProcIdx::GAIN>().setGainDecibels (newValue);
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::setGainLinear (Type newValue)
 {
-    pc.template get<ProcIdx::gain>().setGainLinear (newValue);
+    pc.template get<ProcIdx::GAIN>().setGainLinear (newValue);
 }
 
-//==============================================================================
+template <typename Type>
+void Osc<Type>::setBypass (const bool b)
+{
+    if (b)
+        bypass = true;
+    else
+        bypass = false;
+}
+
 template <typename Type>
 Type Osc<Type>::processSample (Type input)
 {
-    return pc.template get<ProcIdx::osc>().processSample (input);
+    return pc.template get<ProcIdx::OSC>().processSample (input);
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::reset() noexcept
 {
     return;
 }
 
-//==============================================================================
 template <typename Type>
 template <typename ProcessContext>
 void Osc<Type>::process (const ProcessContext& context) noexcept
 {
+    if (bypass)
+        return;
+
     auto& inputBlock = context.getInputBlock();
     auto& outputBlock = context.getOutputBlock();
     auto numSamples = outputBlock.getNumSamples();
@@ -95,29 +100,30 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
 
         for (size_t i = 0; i < numSamples; ++i)
         {
-            pc.template get<osc>().setFrequency (pc.template get<osc>().getFrequency() + fm_freq * fm_depth);
-            output[i] = pc.template get<osc>().processSample (input[i]);
+            pc.template get<ProcIdx::OSC>().setFrequency (pc.template get<ProcIdx::OSC>().getFrequency()
+                                                          + fm_freq * fm_depth);
+            output[i] = pc.template get<ProcIdx::OSC>().processSample (input[i]);
         }
     }
-    pc.template get<ProcIdx::gain>().process (context);
+    pc.template get<ProcIdx::GAIN>().process (context);
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 {
+    bypass = true;
+
     pc.prepare (spec);
     fm.prepare (spec);
 
-    pc.template get<osc>().initialise ([] (float x) { return std::sin (x); });
-    pc.template get<ProcIdx::gain>().setGainDecibels (-100.0);
+    pc.template get<ProcIdx::OSC>().initialise ([] (float x) { return std::sin (x); });
+    pc.template get<ProcIdx::GAIN>().setGainDecibels (-100.0);
 
     fm.initialise ([] (float x) { return std::sin (x); });
     fm_freq = 0;
     fm_depth = 0;
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::setFmFreq (const Type freq)
 {
@@ -125,7 +131,6 @@ void Osc<Type>::setFmFreq (const Type freq)
     fm_freq = freq;
 }
 
-//==============================================================================
 template <typename Type>
 void Osc<Type>::setFmDepth (const Type depth)
 {

@@ -4,6 +4,7 @@
 #include <JuceHeader.h>
 #include <array>
 
+// Constatns
 //==============================================================================
 inline constexpr int NUM_INPUT_CHANNELS = 0;
 inline constexpr int NUM_OUTPUT_CHANNELS = 8;
@@ -133,3 +134,6 @@ namespace Group
 }; // namespace Group
 
 }; // namespace IDs
+
+// TMP declarations
+//==============================================================================

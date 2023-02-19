@@ -27,6 +27,10 @@ It is intended to be a standalone application, so there is no VST version.
 
 This project is for learning purposes only.
 
+## Usage
+to emit a sound, press any key on keyboard.
+
+
 ## Build steps
 1. [Get](https://juce.com/get-juce/) and install the JUCE library.
 2. Clone the repo: `git clone https://github.com/Riyum/OneButtonKiller.git`

@@ -1,7 +1,8 @@
 #include "MainComponent.h"
 
 //==============================================================================
-MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st) : state (st)
+MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
+    : state (st), selectors_state (selectors_st)
 // adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
     for (unsigned i = 0; i < chains.size(); i++)
@@ -24,8 +25,7 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st) 
 
     jassert (NUM_OUTPUT_CHANNELS == deviceManager.getAudioDeviceSetup().outputChannels.countNumberOfSetBits());
 
-    // addAndMakeVisible (adsc);
-
+    addKeyListener (this);
     initGuiComponents (state, selectors_st);
 
     startTimer (500);
@@ -49,6 +49,7 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st) 
 MainComponent::~MainComponent()
 {
     // This shuts down the audio device and clears the audio source.
+    removeKeyListener (this);
     shutdownAudio();
 }
 
@@ -69,15 +70,18 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
         lfo[i].prepare ({spec.sampleRate / def_params.lfoUpdateRate, spec.maximumBlockSize, spec.numChannels});
     }
 
+    oscOff();
     setDefaultParameterValues();
 }
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
+
     juce::dsp::AudioBlock<float> audioBlock{*bufferToFill.buffer};
-    for (unsigned i = 0; i < audio_blocks.size(); i++)
+
+    for (unsigned i = 0, j = 0; i < audio_blocks.size(); ++i, j += 2)
         audio_blocks[i] =
-            std::make_pair (audioBlock.getSingleChannelBlock (i), audioBlock.getSingleChannelBlock (i + 1));
+            std::make_pair (audioBlock.getSingleChannelBlock (j), audioBlock.getSingleChannelBlock (j + 1));
 
     // process by sample
     for (auto samp = 0; samp < bufferToFill.numSamples; ++samp)
@@ -117,6 +121,26 @@ void MainComponent::releaseResources()
     // restarted due to a setting change.
 
     // For more details, see the help for AudioProcessor::releaseResources()
+}
+
+bool MainComponent::keyPressed (const juce::KeyPress& key, juce::Component* originatingComponent)
+{
+    // if (key.getKeyCode() == juce::KeyPress::returnKey)
+    oscOn();
+    return true;
+}
+
+bool MainComponent::keyStateChanged (bool isKeyDown, juce::Component* originatingComponent)
+{
+    if (!isKeyDown)
+    {
+        oscOff();
+    }
+    else
+    {
+        // Handle the key up event
+    }
+    return true;
 }
 
 void MainComponent::timerCallback()
@@ -244,16 +268,16 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
     {
         for (auto& c : chains)
         {
-            c.first->get<ProcIdx::masterGain>().setGainLinear (val);
-            c.second->get<ProcIdx::masterGain>().setGainLinear (val);
+            c.first->get<ProcIdx::MASTER_GAIN>().setGainLinear (val);
+            c.second->get<ProcIdx::MASTER_GAIN>().setGainLinear (val);
         }
         return;
     }
 
     if (comp_type == IDs::OUTPUT_GAIN)
     {
-        chain->first->get<ProcIdx::chanGain>().setGainDecibels (val);
-        chain->second->get<ProcIdx::chanGain>().setGainDecibels (val);
+        chain->first->get<ProcIdx::CHAN_GAIN>().setGainDecibels (val);
+        chain->second->get<ProcIdx::CHAN_GAIN>().setGainDecibels (val);
         return;
     }
 
@@ -262,36 +286,36 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
         if (propertie == IDs::wavetype)
         {
-            chain->first->get<ProcIdx::osc>().setWaveType (static_cast<WaveType> ((int)val));
-            chain->second->get<ProcIdx::osc>().setWaveType (static_cast<WaveType> ((int)val));
+            chain->first->get<ProcIdx::OSC>().setWaveType (static_cast<WaveType> ((int)val));
+            chain->second->get<ProcIdx::OSC>().setWaveType (static_cast<WaveType> ((int)val));
             return;
         }
 
         if (propertie == IDs::freq)
         {
-            chain->first->get<ProcIdx::osc>().setFrequency (val);
-            chain->second->get<ProcIdx::osc>().setFrequency (val);
+            chain->first->get<ProcIdx::OSC>().setFrequency (val);
+            chain->second->get<ProcIdx::OSC>().setFrequency (val);
             return;
         }
 
         if (propertie == IDs::gain)
         {
-            chain->first->get<ProcIdx::osc>().setGainDecibels (val);
-            chain->second->get<ProcIdx::osc>().setGainDecibels (val);
+            chain->first->get<ProcIdx::OSC>().setGainDecibels (val);
+            chain->second->get<ProcIdx::OSC>().setGainDecibels (val);
             return;
         }
 
         if (propertie == IDs::fm_freq)
         {
-            chain->first->get<ProcIdx::osc>().setFmFreq (val);
-            chain->second->get<ProcIdx::osc>().setFmFreq (val);
+            chain->first->get<ProcIdx::OSC>().setFmFreq (val);
+            chain->second->get<ProcIdx::OSC>().setFmFreq (val);
             return;
         }
 
         if (propertie == IDs::fm_depth)
         {
-            chain->first->get<ProcIdx::osc>().setFmDepth (val);
-            chain->second->get<ProcIdx::osc>().setFmDepth (val);
+            chain->first->get<ProcIdx::OSC>().setFmDepth (val);
+            chain->second->get<ProcIdx::OSC>().setFmDepth (val);
             return;
         }
     }
@@ -330,20 +354,20 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
     {
         if (propertie == IDs::mix)
         {
-            chain->first->get<ProcIdx::del>().setWetLevel (val);
-            chain->second->get<ProcIdx::del>().setWetLevel (val);
+            chain->first->get<ProcIdx::DEL>().setWetLevel (val);
+            chain->second->get<ProcIdx::DEL>().setWetLevel (val);
             return;
         }
         if (propertie == IDs::time)
         {
-            chain->first->get<ProcIdx::del>().setDelayTime (val);
-            chain->second->get<ProcIdx::del>().setDelayTime (static_cast<double> (val) + 0.2);
+            chain->first->get<ProcIdx::DEL>().setDelayTime (val);
+            chain->second->get<ProcIdx::DEL>().setDelayTime (static_cast<double> (val) + 0.2);
             return;
         }
         if (propertie == IDs::feedback)
         {
-            chain->first->get<ProcIdx::del>().setFeedback (val);
-            chain->second->get<ProcIdx::del>().setFeedback (val);
+            chain->first->get<ProcIdx::DEL>().setFeedback (val);
+            chain->second->get<ProcIdx::DEL>().setFeedback (val);
             return;
         }
     }
@@ -411,32 +435,90 @@ void MainComponent::generateRandomParameters()
     std::uniform_real_distribution<> del_time (gui_params.delay_time_min, gui_params.delay_time_max);
     std::uniform_real_distribution<> del_feedback (gui_params.delay_feedback_min, gui_params.delay_feedback_max);
 
+    std::vector<int> selected_osc;
+    std::vector<int> selected_lfo;
+    std::vector<int> selected_del;
+
+    for (auto v : selectors_state.getChildWithName (IDs::OSC_GUI))
+        selected_osc.push_back (static_cast<int> (v.getProperty (IDs::selector)) - 1);
+
+    for (auto v : selectors_state.getChildWithName (IDs::LFO_GUI))
+        selected_lfo.push_back (static_cast<int> (v.getProperty (IDs::selector)) - 1);
+
+    for (auto v : selectors_state.getChildWithName (IDs::DELAY_GUI))
+        selected_del.push_back (static_cast<int> (v.getProperty (IDs::selector)) - 1);
+
     for (auto osc_parameters : state.getChildWithName (IDs::OSC))
     {
-        osc_parameters.setProperty (IDs::wavetype, osc_type (gen), &undoManager);
-        osc_parameters.setProperty (IDs::freq, osc_freq (gen), &undoManager);
-        osc_parameters.setProperty (IDs::fm_freq, osc_fm_freq (gen), &undoManager);
-        osc_parameters.setProperty (IDs::fm_depth, osc_fm_depth (gen), &undoManager);
+        int wavetype = osc_type (gen);
+        double freq = osc_freq (gen);
+        double fm_freq = osc_fm_freq (gen);
+        double fm_depth = osc_fm_depth (gen);
+
+        osc_parameters.setProperty (IDs::wavetype, wavetype, &undoManager);
+        osc_parameters.setProperty (IDs::freq, freq, &undoManager);
+        osc_parameters.setProperty (IDs::fm_freq, fm_freq, &undoManager);
+        osc_parameters.setProperty (IDs::fm_depth, fm_depth, &undoManager);
+
+        // applying changes to audio components that currently without gui representation
+        size_t current_osc = static_cast<size_t> (state.getChildWithName (IDs::OSC).indexOf (osc_parameters));
+        auto it = std::find (selected_osc.begin(), selected_osc.end(), current_osc);
+
+        if (it != selected_osc.end())
+            continue;
+
+        setChainParams (&chains[current_osc], IDs::OSC, IDs::wavetype, wavetype);
+        setChainParams (&chains[current_osc], IDs::OSC, IDs::freq, freq);
+        setChainParams (&chains[current_osc], IDs::OSC, IDs::fm_freq, fm_freq);
+        setChainParams (&chains[current_osc], IDs::OSC, IDs::fm_depth, fm_depth);
     }
 
     for (auto lfo_parameters : state.getChildWithName (IDs::LFO))
     {
-        lfo_parameters.setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
-        lfo_parameters.setProperty (IDs::freq, lfo_freq (gen), &undoManager);
-        lfo_parameters.setProperty (IDs::gain, lfo_gain (gen), &undoManager);
+        int wavetype = lfo_type (gen);
+        double freq = lfo_freq (gen);
+        double gain = lfo_gain (gen);
+
+        lfo_parameters.setProperty (IDs::wavetype, wavetype, &undoManager);
+        lfo_parameters.setProperty (IDs::freq, freq, &undoManager);
+        lfo_parameters.setProperty (IDs::gain, gain, &undoManager);
+
+        size_t current_lfo = static_cast<size_t> (state.getChildWithName (IDs::LFO).indexOf (lfo_parameters));
+        auto it = std::find (selected_lfo.begin(), selected_lfo.end(), current_lfo);
+
+        if (it != selected_lfo.end())
+            continue;
+
+        setChainParams (&chains[current_lfo], IDs::LFO, IDs::wavetype, wavetype);
+        setChainParams (&chains[current_lfo], IDs::LFO, IDs::freq, freq);
+        setChainParams (&chains[current_lfo], IDs::LFO, IDs::gain, gain);
     }
 
     for (auto del_parameters : state.getChildWithName (IDs::DELAY))
     {
-        del_parameters.setProperty (IDs::mix, del_mix (gen), &undoManager);
-        del_parameters.setProperty (IDs::time, del_time (gen), &undoManager);
-        del_parameters.setProperty (IDs::feedback, del_feedback (gen), &undoManager);
+        double mix = del_mix (gen);
+        double time = del_time (gen);
+        double feedback = del_feedback (gen);
+
+        del_parameters.setProperty (IDs::mix, mix, &undoManager);
+        del_parameters.setProperty (IDs::time, time, &undoManager);
+        del_parameters.setProperty (IDs::feedback, feedback, &undoManager);
+
+        size_t current_del = static_cast<size_t> (state.getChildWithName (IDs::DELAY).indexOf (del_parameters));
+        auto it = std::find (selected_del.begin(), selected_del.end(), current_del);
+
+        if (it != selected_del.end())
+            continue;
+
+        setChainParams (&chains[current_del], IDs::DELAY, IDs::mix, mix);
+        setChainParams (&chains[current_del], IDs::DELAY, IDs::time, time);
+        setChainParams (&chains[current_del], IDs::DELAY, IDs::feedback, feedback);
     }
 }
 
 void MainComponent::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
+    // (Our component is opaque, so we must completely fill the background with a solid color)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
     // You can add your drawing code here!
 }
@@ -509,4 +591,22 @@ void MainComponent::resized()
     // auto adsc_bounds = getLocalBounds().removeFromLeft (70 * 4);
     // adsc.setBounds (adsc_bounds);
     // adsc.setCentrePosition (adsc_bounds.getCentre().translated (70 * 4 + 20, 0));
+}
+
+void MainComponent::oscOn()
+{
+    for (auto&& chain : chains)
+    {
+        chain.first->get<ProcIdx::OSC>().setBypass (false);
+        chain.second->get<ProcIdx::OSC>().setBypass (false);
+    }
+}
+
+void MainComponent::oscOff()
+{
+    for (auto&& chain : chains)
+    {
+        chain.first->get<ProcIdx::OSC>().setBypass (true);
+        chain.second->get<ProcIdx::OSC>().setBypass (true);
+    }
 }
