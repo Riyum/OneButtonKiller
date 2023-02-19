@@ -7,7 +7,7 @@
 #include "Osc.h"
 #include "Utils.h"
 #include <JuceHeader.h>
-#include <algorithm>
+// #include <algorithm>
 #include <array>
 #include <memory>
 #include <random>
@@ -49,16 +49,14 @@ private:
 
     // we need two chains for each stereo output channel
     using StereoChain = std::pair<std::unique_ptr<Chain>, std::unique_ptr<Chain>>;
-    std::vector<StereoChain> chains;
-    // std::array<StereoChain, NUM_OUTPUT_CHANNELS / 2> chains;
+    std::array<StereoChain, NUM_OUTPUT_CHANNELS / 2> chains;
 
     // each (stereo)chain need its own (stereo)block
     using StereoBlock = std::pair<juce::dsp::AudioBlock<float>, juce::dsp::AudioBlock<float>>;
-    std::vector<StereoBlock> audio_blocks;
-    // std::array<StereoBlock, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
+    std::array<StereoBlock, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
 
     size_t lfoUpdateCounter = def_params.lfoUpdateRate;
-    std::vector<Osc<float>> lfo;
+    std::array<Osc<float>, NUM_OUTPUT_CHANNELS / 2> lfo;
 
     juce::ValueTree state;
     juce::UndoManager undoManager;

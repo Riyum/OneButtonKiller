@@ -4,10 +4,10 @@
 MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st) : state (st)
 // adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
-    for (int i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
+    for (unsigned i = 0; i < chains.size(); i++)
     {
-        chains.push_back (std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>()));
-        lfo.push_back (Osc<float>());
+        chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
+        lfo[i] = Osc<float>();
     }
 
     // Some platforms require permissions to open input channels so request that here
@@ -75,10 +75,9 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
     juce::dsp::AudioBlock<float> audioBlock{*bufferToFill.buffer};
-
-    for (size_t i = 0; static_cast<int> (i) < bufferToFill.buffer->getNumChannels(); i += 2)
-        audio_blocks.push_back (
-            std::make_pair (audioBlock.getSingleChannelBlock (i), audioBlock.getSingleChannelBlock (i + 1)));
+    for (unsigned i = 0; i < audio_blocks.size(); i++)
+        audio_blocks[i] =
+            std::make_pair (audioBlock.getSingleChannelBlock (i), audioBlock.getSingleChannelBlock (i + 1));
 
     // process by sample
     for (auto samp = 0; samp < bufferToFill.numSamples; ++samp)
@@ -110,8 +109,6 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
         chains[i].first->process (juce::dsp::ProcessContextReplacing<float> (audio_blocks[i].first));
         chains[i].second->process (juce::dsp::ProcessContextReplacing<float> (audio_blocks[i].second));
     }
-
-    audio_blocks.clear();
 }
 
 void MainComponent::releaseResources()
@@ -408,7 +405,7 @@ void MainComponent::generateRandomParameters()
 
     std::uniform_int_distribution<> lfo_type (gui_params.lfo_waveType_min, 3);
     std::uniform_real_distribution<> lfo_freq (gui_params.lfo_freq_min, gui_params.lfo_freq_max);
-    std::uniform_real_distribution<> lfo_gain (gui_params.lfo_gain_min, percentageFrom (30, gui_params.lfo_gain_max));
+    std::uniform_real_distribution<> lfo_gain (gui_params.lfo_gain_min, gui_params.lfo_gain_max);
 
     std::uniform_real_distribution<> del_mix (gui_params.delay_mix_min, gui_params.delay_mix_max);
     std::uniform_real_distribution<> del_time (gui_params.delay_time_min, gui_params.delay_time_max);
