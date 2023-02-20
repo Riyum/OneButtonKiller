@@ -8,7 +8,7 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     for (unsigned i = 0; i < chains.size(); i++)
     {
         chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
-        lfo[i] = Osc<float>();
+        lfo[i] = std::make_unique<Osc<float>>();
     }
 
     // Some platforms require permissions to open input channels so request that here
@@ -67,7 +67,7 @@ void MainComponent::prepareToPlay (int samplesPerBlockExpected, double sampleRat
     {
         chains[i].first->prepare (spec);
         chains[i].second->prepare (spec);
-        lfo[i].prepare ({spec.sampleRate / def_params.lfoUpdateRate, spec.maximumBlockSize, spec.numChannels});
+        lfo[i]->prepare ({spec.sampleRate / def_params.lfoUpdateRate, spec.maximumBlockSize, spec.numChannels});
     }
 
     oscOff();
@@ -86,21 +86,19 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
     // process by sample
     for (auto samp = 0; samp < bufferToFill.numSamples; ++samp)
     {
+
         if (lfoUpdateCounter == 0)
         {
             lfoUpdateCounter = def_params.lfoUpdateRate;
             for (size_t i = 0; i < lfo.size(); i++)
             {
-                float lfo_range =
-                    gui_params.osc_freq_max
-                    - static_cast<float> (getStateParamValue (state, IDs::LFO, IDs::Group::LFO[i], IDs::freq));
-                double lfo_gain =
-                    static_cast<double> (getStateParamValue (state, IDs::LFO, IDs::Group::LFO[i], IDs::gain));
-                double osc_freq =
-                    static_cast<double> (getStateParamValue (state, IDs::OSC, IDs::Group::OSC[i], IDs::freq));
-                auto lfoOut = lfo[i].processSample (0.0f);
-                float mod = juce::jmap (lfoOut, -1.0f, 1.0f, static_cast<float> (osc_freq), lfo_range);
-                setChainParams (&chains[i], IDs::OSC, IDs::freq, osc_freq + mod * lfo_gain);
+                float lfo_range = gui_params.osc_freq_max - lfo[i]->getFrequency();
+                float lfo_gain = lfo[i]->getGainLinear();
+                float osc_freq = chains[i].first->get<ProcIdx::OSC>().getBaseFrequency();
+                auto lfoOut = lfo[i]->processSample (0.0f);
+                float mod = juce::jmap (lfoOut, -1.0f, 1.0f, osc_freq, lfo_range);
+                chains[i].first->get<ProcIdx::OSC>().setFrequency (osc_freq + mod * lfo_gain);
+                chains[i].second->get<ProcIdx::OSC>().setFrequency (osc_freq + mod * lfo_gain);
             }
         }
         --lfoUpdateCounter;
@@ -125,6 +123,7 @@ void MainComponent::releaseResources()
 
 bool MainComponent::keyPressed (const juce::KeyPress& key, juce::Component* originatingComponent)
 {
+    juce::ignoreUnused (key, originatingComponent);
     // if (key.getKeyCode() == juce::KeyPress::returnKey)
     oscOn();
     return true;
@@ -132,6 +131,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key, juce::Component* orig
 
 bool MainComponent::keyStateChanged (bool isKeyDown, juce::Component* originatingComponent)
 {
+    juce::ignoreUnused (originatingComponent);
     if (!isKeyDown)
     {
         oscOff();
@@ -293,8 +293,8 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
         if (propertie == IDs::freq)
         {
-            chain->first->get<ProcIdx::OSC>().setFrequency (val);
-            chain->second->get<ProcIdx::OSC>().setFrequency (val);
+            chain->first->get<ProcIdx::OSC>().setBaseFrequency (val);
+            chain->second->get<ProcIdx::OSC>().setBaseFrequency (val);
             return;
         }
 
@@ -333,19 +333,19 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
         if (propertie == IDs::wavetype)
         {
-            lfo[idx].setWaveType (static_cast<WaveType> ((int)val));
+            lfo[idx]->setWaveType (static_cast<WaveType> ((int)val));
             return;
         }
 
         if (propertie == IDs::freq)
         {
-            lfo[idx].setFrequency (val);
+            lfo[idx]->setFrequency (val);
             return;
         }
 
         if (propertie == IDs::gain)
         {
-            lfo[idx].setGainLinear (val);
+            lfo[idx]->setGainLinear (val);
             return;
         }
     }

@@ -23,7 +23,7 @@ inline constexpr struct _Default_Parameters
     WaveType lfo_wavetype = WaveType::SIN;
     double lfo_freq = 0;
     float lfo_gain = 0;         // linear
-    size_t lfoUpdateRate = 100; // every 100 samples
+    size_t lfoUpdateRate = 100; // samples
 
     float del_mix = 0;
     float del_time = 0.7;

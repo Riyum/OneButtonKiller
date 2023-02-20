@@ -26,8 +26,7 @@ ButtonsGui::ButtonsGui (const std::vector<std::function<void()>>& funcs)
 
 void ButtonsGui::paint (juce::Graphics& g)
 {
-    // g.setColour (juce::Colours::white);
-    // g.drawRect (getLocalBounds(), 1);
+    juce::ignoreUnused (g);
 }
 
 void ButtonsGui::resized()

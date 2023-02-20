@@ -65,7 +65,7 @@ private:
     std::array<StereoBlock, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
 
     size_t lfoUpdateCounter = def_params.lfoUpdateRate;
-    std::array<Osc<float>, NUM_OUTPUT_CHANNELS / 2> lfo;
+    std::array<std::unique_ptr<Osc<float>>, NUM_OUTPUT_CHANNELS / 2> lfo;
 
     juce::ValueTree state;
     juce::ValueTree selectors_state;

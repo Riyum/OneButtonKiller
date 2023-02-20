@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <atomic>
 
 enum WaveType
 {
@@ -19,11 +20,21 @@ public:
     Osc<Type>();
 
     void setWaveType (WaveType choice);
+
+    Type getBaseFrequency();
+    void setBaseFrequency (Type newValue);
+
+    Type getFrequency();
     void setFrequency (Type newValue);
+
+    Type getGainDecibels();
+    void setGainDecibels (Type newValue);
+
+    Type getGainLinear();
+    void setGainLinear (Type newValue);
+
     void setFmFreq (const Type freq);
     void setFmDepth (const Type depth);
-    void setGainDecibels (Type newValue);
-    void setGainLinear (Type newValue);
     void setBypass (const bool b);
 
     Type processSample (Type input);
@@ -42,8 +53,8 @@ private:
 
     juce::dsp::ProcessorChain<juce::dsp::Oscillator<Type>, juce::dsp::Gain<Type>> pc;
     juce::dsp::Oscillator<Type> fm;
-    // TODO: atomic ?
+    Type freq_base;
     Type fm_freq;
     Type fm_depth;
-    bool bypass = false;
+    std::atomic<bool> bypass = false;
 };

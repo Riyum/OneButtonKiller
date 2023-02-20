@@ -43,15 +43,45 @@ void Osc<Type>::setWaveType (WaveType choice)
 }
 
 template <typename Type>
+Type Osc<Type>::getBaseFrequency()
+{
+    return freq_base;
+}
+
+template <typename Type>
+void Osc<Type>::setBaseFrequency (Type newValue)
+{
+    freq_base = newValue;
+}
+
+template <typename Type>
+Type Osc<Type>::getFrequency()
+{
+    return pc.template get<ProcIdx::OSC>().getFrequency();
+}
+
+template <typename Type>
 void Osc<Type>::setFrequency (Type newValue)
 {
     pc.template get<ProcIdx::OSC>().setFrequency (newValue);
 }
 
 template <typename Type>
+Type Osc<Type>::getGainDecibels()
+{
+    return pc.template get<ProcIdx::GAIN>().getGainDecibels();
+}
+
+template <typename Type>
 void Osc<Type>::setGainDecibels (Type newValue)
 {
     pc.template get<ProcIdx::GAIN>().setGainDecibels (newValue);
+}
+
+template <typename Type>
+Type Osc<Type>::getGainLinear()
+{
+    return pc.template get<ProcIdx::GAIN>().getGainLinear();
 }
 
 template <typename Type>
@@ -63,10 +93,7 @@ void Osc<Type>::setGainLinear (Type newValue)
 template <typename Type>
 void Osc<Type>::setBypass (const bool b)
 {
-    if (b)
-        bypass = true;
-    else
-        bypass = false;
+    bypass.store (b);
 }
 
 template <typename Type>
@@ -85,8 +112,6 @@ template <typename Type>
 template <typename ProcessContext>
 void Osc<Type>::process (const ProcessContext& context) noexcept
 {
-    if (bypass)
-        return;
 
     auto& inputBlock = context.getInputBlock();
     auto& outputBlock = context.getOutputBlock();
@@ -100,9 +125,14 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
 
         for (size_t i = 0; i < numSamples; ++i)
         {
-            pc.template get<ProcIdx::OSC>().setFrequency (pc.template get<ProcIdx::OSC>().getFrequency()
-                                                          + fm_freq * fm_depth);
-            output[i] = pc.template get<ProcIdx::OSC>().processSample (input[i]);
+            // get the current freq that maybe changed from the main proccess
+            Type current_freq = pc.template get<ProcIdx::OSC>().getFrequency();
+            pc.template get<ProcIdx::OSC>().setFrequency (current_freq + fm_freq * fm_depth);
+
+            if (bypass.load())
+                pc.template get<ProcIdx::OSC>().processSample (input[i]);
+            else
+                output[i] = pc.template get<ProcIdx::OSC>().processSample (input[i]);
         }
     }
     pc.template get<ProcIdx::GAIN>().process (context);
@@ -111,7 +141,7 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
 template <typename Type>
 void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 {
-    bypass = true;
+    bypass.store (true);
 
     pc.prepare (spec);
     fm.prepare (spec);
@@ -120,6 +150,7 @@ void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
     pc.template get<ProcIdx::GAIN>().setGainDecibels (-100.0);
 
     fm.initialise ([] (float x) { return std::sin (x); });
+    freq_base = 440;
     fm_freq = 0;
     fm_depth = 0;
 }
