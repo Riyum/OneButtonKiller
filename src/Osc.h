@@ -19,25 +19,25 @@ class Osc
 public:
     Osc<Type>();
 
-    void setWaveType (WaveType choice);
+    void setWaveType (const WaveType choice);
 
     Type getBaseFrequency();
-    void setBaseFrequency (Type newValue);
+    void setBaseFrequency (const Type newValue);
 
     Type getFrequency();
-    void setFrequency (Type newValue);
+    void setFrequency (const Type newValue);
 
     Type getGainDecibels();
-    void setGainDecibels (Type newValue);
+    void setGainDecibels (const Type newValue);
 
     Type getGainLinear();
-    void setGainLinear (Type newValue);
+    void setGainLinear (const Type newValue);
 
     void setFmFreq (const Type freq);
     void setFmDepth (const Type depth);
     void setBypass (const bool b);
 
-    Type processSample (Type input);
+    Type processSample (const Type input);
 
     void reset() noexcept;
     template <typename ProcessContext>
@@ -53,8 +53,10 @@ private:
 
     juce::dsp::ProcessorChain<juce::dsp::Oscillator<Type>, juce::dsp::Gain<Type>> pc;
     juce::dsp::Oscillator<Type> fm;
+
     Type freq_base;
     Type fm_freq;
     Type fm_depth;
+
     std::atomic<bool> bypass = false;
 };

@@ -120,7 +120,7 @@ OscGui::OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoM
         v, um, IDs::fm_freq, "FM freq", juce::Range{gui_params.osc_fm_freq_min, gui_params.osc_fm_freq_max}, 1, "Hz");
 
     comps[i] = std::make_unique<SliderComp> (
-        v, um, IDs::fm_depth, "FM depth", juce::Range{gui_params.osc_fm_depth_min, gui_params.osc_fm_depth_max}, 0.4);
+        v, um, IDs::fm_depth, "FM depth", juce::Range{gui_params.osc_fm_depth_min, gui_params.osc_fm_depth_max}, 0.7);
 
     for (auto& c : comps)
     {
@@ -217,8 +217,8 @@ LfoGui::LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoM
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{gui_params.lfo_freq_min, gui_params.lfo_freq_max}, 0.6, "Hz");
 
-    comps[i++] = std::make_unique<SliderComp> (v, um, IDs::gain, "Gain",
-                                               juce::Range{gui_params.lfo_gain_min, gui_params.lfo_gain_max}, 1, "dB");
+    comps[i++] = std::make_unique<SliderComp> (
+        v, um, IDs::gain, "Gain", juce::Range{gui_params.lfo_gain_min, gui_params.lfo_gain_max}, 0.3, "dB");
 
     for (auto& c : comps)
     {

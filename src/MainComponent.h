@@ -14,6 +14,7 @@
 #include <vector>
 
 // TODO: add reset to defaults button
+// TODO: add panic button
 
 class MainComponent : public juce::AudioAppComponent,
                       public juce::ChangeListener, // listening to the state envtes
@@ -70,8 +71,6 @@ private:
     juce::ValueTree state;
     juce::ValueTree selectors_state;
     juce::UndoManager undoManager;
-
-    bool osc_key_on = false;
 
     // GUI controllers
     std::unique_ptr<ButtonsGui> btn_comp;

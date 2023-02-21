@@ -86,19 +86,27 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
     // process by sample
     for (auto samp = 0; samp < bufferToFill.numSamples; ++samp)
     {
-
         if (lfoUpdateCounter == 0)
         {
             lfoUpdateCounter = def_params.lfoUpdateRate;
             for (size_t i = 0; i < lfo.size(); i++)
             {
-                float lfo_range = gui_params.osc_freq_max - lfo[i]->getFrequency();
                 float lfo_gain = lfo[i]->getGainLinear();
-                float osc_freq = chains[i].first->get<ProcIdx::OSC>().getBaseFrequency();
+
+                if (lfo_gain == 0)
+                    continue;
+
+                // since the lfo constantly changing the base frequency, Im getting it from the state
+                // if the lfo applied directly on the osc frequency (setFrequency()) it will break the FM modulation
+                float current_freq =
+                    static_cast<float> (getStateParamValue (state, IDs::OSC, IDs::Group::OSC[i], IDs::freq));
+
+                float max_freq = (gui_params.osc_freq_max - current_freq) * lfo_gain;
                 auto lfoOut = lfo[i]->processSample (0.0f);
-                float mod = juce::jmap (lfoOut, -1.0f, 1.0f, osc_freq, lfo_range);
-                chains[i].first->get<ProcIdx::OSC>().setFrequency (osc_freq + mod * lfo_gain);
-                chains[i].second->get<ProcIdx::OSC>().setFrequency (osc_freq + mod * lfo_gain);
+                float lfo_mod = juce::jmap (lfoOut, -1.0f, 1.0f, current_freq, max_freq);
+
+                chains[i].first->get<ProcIdx::OSC>().setBaseFrequency (lfo_mod);
+                chains[i].second->get<ProcIdx::OSC>().setBaseFrequency (lfo_mod);
             }
         }
         --lfoUpdateCounter;
@@ -399,24 +407,6 @@ void MainComponent::setDefaultParameterValues()
     }
 }
 
-template <typename T>
-int MainComponent::getComponentWidth (const std::unique_ptr<T>& comp) const
-{
-    if (comp.get() != nullptr)
-        return comp->getWidthNeeded();
-
-    return 0;
-}
-
-template <typename T>
-int MainComponent::getComponentHeight (const std::unique_ptr<T>& comp) const
-{
-    if (comp.get() != nullptr)
-        return comp->getHeightNeeded();
-
-    return 0;
-}
-
 void MainComponent::generateRandomParameters()
 {
     std::random_device rd;
@@ -516,6 +506,42 @@ void MainComponent::generateRandomParameters()
     }
 }
 
+void MainComponent::oscOn()
+{
+    for (auto&& chain : chains)
+    {
+        chain.first->get<ProcIdx::OSC>().setBypass (false);
+        chain.second->get<ProcIdx::OSC>().setBypass (false);
+    }
+}
+
+void MainComponent::oscOff()
+{
+    for (auto&& chain : chains)
+    {
+        chain.first->get<ProcIdx::OSC>().setBypass (true);
+        chain.second->get<ProcIdx::OSC>().setBypass (true);
+    }
+}
+
+template <typename T>
+int MainComponent::getComponentWidth (const std::unique_ptr<T>& comp) const
+{
+    if (comp.get() != nullptr)
+        return comp->getWidthNeeded();
+
+    return 0;
+}
+
+template <typename T>
+int MainComponent::getComponentHeight (const std::unique_ptr<T>& comp) const
+{
+    if (comp.get() != nullptr)
+        return comp->getHeightNeeded();
+
+    return 0;
+}
+
 void MainComponent::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid color)
@@ -591,22 +617,4 @@ void MainComponent::resized()
     // auto adsc_bounds = getLocalBounds().removeFromLeft (70 * 4);
     // adsc.setBounds (adsc_bounds);
     // adsc.setCentrePosition (adsc_bounds.getCentre().translated (70 * 4 + 20, 0));
-}
-
-void MainComponent::oscOn()
-{
-    for (auto&& chain : chains)
-    {
-        chain.first->get<ProcIdx::OSC>().setBypass (false);
-        chain.second->get<ProcIdx::OSC>().setBypass (false);
-    }
-}
-
-void MainComponent::oscOff()
-{
-    for (auto&& chain : chains)
-    {
-        chain.first->get<ProcIdx::OSC>().setBypass (true);
-        chain.second->get<ProcIdx::OSC>().setBypass (true);
-    }
 }

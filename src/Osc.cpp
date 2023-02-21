@@ -6,7 +6,7 @@ Osc<Type>::Osc()
 }
 
 template <typename Type>
-void Osc<Type>::setWaveType (WaveType choice)
+void Osc<Type>::setWaveType (const WaveType choice)
 {
     auto& osc = pc.template get<ProcIdx::OSC>();
 
@@ -49,7 +49,7 @@ Type Osc<Type>::getBaseFrequency()
 }
 
 template <typename Type>
-void Osc<Type>::setBaseFrequency (Type newValue)
+void Osc<Type>::setBaseFrequency (const Type newValue)
 {
     freq_base = newValue;
 }
@@ -61,7 +61,7 @@ Type Osc<Type>::getFrequency()
 }
 
 template <typename Type>
-void Osc<Type>::setFrequency (Type newValue)
+void Osc<Type>::setFrequency (const Type newValue)
 {
     pc.template get<ProcIdx::OSC>().setFrequency (newValue);
 }
@@ -73,7 +73,7 @@ Type Osc<Type>::getGainDecibels()
 }
 
 template <typename Type>
-void Osc<Type>::setGainDecibels (Type newValue)
+void Osc<Type>::setGainDecibels (const Type newValue)
 {
     pc.template get<ProcIdx::GAIN>().setGainDecibels (newValue);
 }
@@ -85,9 +85,22 @@ Type Osc<Type>::getGainLinear()
 }
 
 template <typename Type>
-void Osc<Type>::setGainLinear (Type newValue)
+void Osc<Type>::setGainLinear (const Type newValue)
 {
     pc.template get<ProcIdx::GAIN>().setGainLinear (newValue);
+}
+
+template <typename Type>
+void Osc<Type>::setFmFreq (const Type freq)
+{
+    fm.setFrequency (freq);
+    fm_freq = freq;
+}
+
+template <typename Type>
+void Osc<Type>::setFmDepth (const Type depth)
+{
+    fm_depth = depth;
 }
 
 template <typename Type>
@@ -97,7 +110,7 @@ void Osc<Type>::setBypass (const bool b)
 }
 
 template <typename Type>
-Type Osc<Type>::processSample (Type input)
+Type Osc<Type>::processSample (const Type input)
 {
     return pc.template get<ProcIdx::OSC>().processSample (input);
 }
@@ -125,9 +138,13 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
 
         for (size_t i = 0; i < numSamples; ++i)
         {
-            // get the current freq that maybe changed from the main proccess
-            Type current_freq = pc.template get<ProcIdx::OSC>().getFrequency();
-            pc.template get<ProcIdx::OSC>().setFrequency (current_freq + fm_freq * fm_depth);
+            float mod = fm.processSample (0.0f) * fm_depth;
+            float freq = freq_base + mod;
+
+            if (freq > 0)
+                pc.template get<ProcIdx::OSC>().setFrequency (freq_base + mod);
+            else
+                pc.template get<ProcIdx::OSC>().setFrequency (0.001f);
 
             if (bypass.load())
                 pc.template get<ProcIdx::OSC>().processSample (input[i]);
@@ -153,19 +170,6 @@ void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
     freq_base = 440;
     fm_freq = 0;
     fm_depth = 0;
-}
-
-template <typename Type>
-void Osc<Type>::setFmFreq (const Type freq)
-{
-    fm.setFrequency (freq);
-    fm_freq = freq;
-}
-
-template <typename Type>
-void Osc<Type>::setFmDepth (const Type depth)
-{
-    fm_depth = depth;
 }
 
 // Explicit template instantiations to satisfy the linker
