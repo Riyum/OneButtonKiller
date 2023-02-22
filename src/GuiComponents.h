@@ -24,13 +24,15 @@ private:
     int btn_width = 50, btn_height = 20;
     static constexpr int NUM_OF_COMPONENTS = 3;
     std::array<std::unique_ptr<juce::TextButton>, NUM_OF_COMPONENTS> comps;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ButtonsGui)
 };
 
 //==============================================================================
 class OutputGui : public juce::Component
 {
 public:
-    OutputGui (const juce::ValueTree& v, juce::UndoManager& um, juce::ChangeListener* listener);
+    OutputGui (const juce::ValueTree& v, juce::UndoManager& um);
     void paint (juce::Graphics& g) override;
     void resized() override;
     int getWidthNeeded();
@@ -39,13 +41,15 @@ public:
 private:
     static constexpr int NUM_OF_COMPONENTS = 5;
     std::array<std::unique_ptr<SliderComp>, NUM_OF_COMPONENTS> comps;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OutputGui)
 };
 
 //==============================================================================
 class OscGui : public juce::Component
 {
 public:
-    OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um, juce::ChangeListener* listener);
+    OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um);
     void paint (juce::Graphics& g) override;
     void resized() override;
     void setSelector (const juce::ValueTree& v);
@@ -55,13 +59,15 @@ public:
 private:
     static constexpr int NUM_OF_COMPONENTS = 6;
     std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OscGui)
 };
 
 //==============================================================================
 class LfoGui : public juce::Component
 {
 public:
-    LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um, juce::ChangeListener* listener);
+    LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um);
     void paint (juce::Graphics& g) override;
     void resized() override;
     void setSelector (const juce::ValueTree& v);
@@ -71,14 +77,15 @@ public:
 private:
     static constexpr int NUM_OF_COMPONENTS = 4;
     std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LfoGui)
 };
 
 //==============================================================================
 class DelayGui : public juce::Component
 {
 public:
-    DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um,
-              juce::ChangeListener* listener);
+    DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um);
     void paint (juce::Graphics& g) override;
     void resized() override;
     void setSelector (const juce::ValueTree& v);
@@ -88,4 +95,6 @@ public:
 private:
     static constexpr int NUM_OF_COMPONENTS = 4;
     std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DelayGui)
 };

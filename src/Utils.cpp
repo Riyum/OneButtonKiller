@@ -1,5 +1,28 @@
 #include "Utils.h"
 
+Broadcaster::Broadcaster (const juce::ValueTree& v, const juce::Identifier& prop) : propertie (prop), state (v)
+
+{
+    state.addListener (this);
+}
+
+juce::ValueTree Broadcaster::getState() const
+{
+    return state;
+}
+
+void Broadcaster::valueTreePropertyChanged (juce::ValueTree& v, const juce::Identifier& p)
+{
+    juce::ignoreUnused (v);
+    if (propertie == p)
+    {
+        sendChangeMessage();
+    }
+}
+
+// clang-format off
+
+//==============================================================================
 juce::ValueTree createSelectorsTree()
 {
     juce::ValueTree oscs{IDs::OSC_GUI, {}};
@@ -8,9 +31,9 @@ juce::ValueTree createSelectorsTree()
 
     for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 4; ++i)
     {
-        juce::ValueTree osc{IDs::Group::OSC[i], {{IDs::selector, gui_params.selector[i]}}};
-        juce::ValueTree lfo{IDs::Group::LFO[i], {{IDs::selector, gui_params.selector[i]}}};
-        juce::ValueTree del{IDs::Group::DELAY[i], {{IDs::selector, gui_params.selector[i]}}};
+        juce::ValueTree osc{IDs::Group::OSC[i], {{IDs::selector, param_limits.selector[i]}}};
+        juce::ValueTree lfo{IDs::Group::LFO[i], {{IDs::selector, param_limits.selector[i]}}};
+        juce::ValueTree del{IDs::Group::DELAY[i], {{IDs::selector, param_limits.selector[i]}}};
 
         oscs.addChild (osc, -1, nullptr);
         lfos.addChild (lfo, -1, nullptr);
@@ -67,3 +90,5 @@ juce::ValueTree createDefaultTree()
 
     return root;
 }
+
+// clang-format on

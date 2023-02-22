@@ -31,7 +31,7 @@ inline constexpr struct _Default_Parameters
 
 } def_params;
 
-inline constexpr struct _Gui_Parameters
+inline constexpr struct _Parameter_Limits
 {
     // JUCE slider setter/getters are expecting double types
     // combobox expecting int's
@@ -45,7 +45,7 @@ inline constexpr struct _Gui_Parameters
     double osc_freq_min = 0, osc_freq_max = 24000;
     double osc_gain_min = -100, osc_gain_max = 0;
     double osc_fm_freq_min = 0, osc_fm_freq_max = 150;
-    double osc_fm_depth_min = 0, osc_fm_depth_max = 5000;
+    double osc_fm_depth_min = 0, osc_fm_depth_max = 10000;
 
     int lfo_waveType_min = 1, lfo_waveType_max = 6;
     double lfo_freq_min = 0, lfo_freq_max = 40;
@@ -55,7 +55,7 @@ inline constexpr struct _Gui_Parameters
     double delay_time_min = 0, delay_time_max = 4.79;
     double delay_feedback_min = 0, delay_feedback_max = 1;
 
-} gui_params;
+} param_limits;
 
 inline constexpr struct _Gui_Sizes
 {
@@ -134,6 +134,3 @@ namespace Group
 }; // namespace Group
 
 }; // namespace IDs
-
-// TMP declarations
-//==============================================================================

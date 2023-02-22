@@ -51,7 +51,7 @@ int ButtonsGui::getHeightNeeded()
 }
 
 //==============================================================================
-OutputGui::OutputGui (const juce::ValueTree& v, juce::UndoManager& um, juce::ChangeListener* listener)
+OutputGui::OutputGui (const juce::ValueTree& v, juce::UndoManager& um)
 {
 
     for (unsigned i = 0; i < comps.size(); ++i)
@@ -59,16 +59,16 @@ OutputGui::OutputGui (const juce::ValueTree& v, juce::UndoManager& um, juce::Cha
         if (i != 0)
         {
             const auto& ch_node = v.getChildWithName (IDs::Group::CHAN[i - 1]);
-            comps[i] = std::make_unique<SliderComp> (ch_node, um, IDs::gain, "Ch" + std::to_string (i),
-                                                     juce::Range{gui_params.chan_min, gui_params.chan_max}, 1, "dB");
+            comps[i] =
+                std::make_unique<SliderComp> (ch_node, um, IDs::gain, "Ch" + std::to_string (i),
+                                              juce::Range{param_limits.chan_min, param_limits.chan_max}, 1, "dB");
         }
         else
-            comps[i] = std::make_unique<SliderComp> (v, um, IDs::master, "Master",
-                                                     juce::Range{gui_params.master_min, gui_params.master_max}, 1, "%");
+            comps[i] = std::make_unique<SliderComp> (
+                v, um, IDs::master, "Master", juce::Range{param_limits.master_min, param_limits.master_max}, 1, "%");
 
         addAndMakeVisible (comps[i]->getComponent());
         addAndMakeVisible (comps[i]->label);
-        comps[i]->addChangeListener (listener);
     }
 }
 
@@ -100,8 +100,7 @@ int OutputGui::getHeightNeeded()
 }
 
 //==============================================================================
-OscGui::OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um,
-                juce::ChangeListener* listener)
+OscGui::OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um)
 {
     unsigned i = 0;
 
@@ -111,23 +110,24 @@ OscGui::OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoM
                                                juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
 
     comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::freq, "Freq", juce::Range{gui_params.osc_freq_min, gui_params.osc_freq_max}, 0.4, "Hz");
+        v, um, IDs::freq, "Freq", juce::Range{param_limits.osc_freq_min, param_limits.osc_freq_max}, 0.4, "Hz");
 
     comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::gain, "Gain", juce::Range{gui_params.osc_gain_min, gui_params.osc_gain_max}, 3.0, "dB");
+        v, um, IDs::gain, "Gain", juce::Range{param_limits.osc_gain_min, param_limits.osc_gain_max}, 3.0, "dB");
 
-    comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::fm_freq, "FM freq", juce::Range{gui_params.osc_fm_freq_min, gui_params.osc_fm_freq_max}, 1, "Hz");
+    comps[i++] =
+        std::make_unique<SliderComp> (v, um, IDs::fm_freq, "FM freq",
+                                      juce::Range{param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max}, 1, "Hz");
 
-    comps[i] = std::make_unique<SliderComp> (
-        v, um, IDs::fm_depth, "FM depth", juce::Range{gui_params.osc_fm_depth_min, gui_params.osc_fm_depth_max}, 0.7);
+    comps[i] =
+        std::make_unique<SliderComp> (v, um, IDs::fm_depth, "FM depth",
+                                      juce::Range{param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max}, 0.7);
 
     for (auto& c : comps)
     {
         if (c == nullptr)
             continue;
 
-        c->addChangeListener (listener);
         addAndMakeVisible (c->label);
         addAndMakeVisible (c->getComponent());
     }
@@ -204,8 +204,7 @@ int OscGui::getHeightNeeded()
 }
 
 //==============================================================================
-LfoGui::LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um,
-                juce::ChangeListener* listener)
+LfoGui::LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um)
 {
     unsigned i = 0;
 
@@ -215,17 +214,16 @@ LfoGui::LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoM
                                                juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
 
     comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::freq, "Freq", juce::Range{gui_params.lfo_freq_min, gui_params.lfo_freq_max}, 0.6, "Hz");
+        v, um, IDs::freq, "Freq", juce::Range{param_limits.lfo_freq_min, param_limits.lfo_freq_max}, 0.6, "Hz");
 
     comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::gain, "Gain", juce::Range{gui_params.lfo_gain_min, gui_params.lfo_gain_max}, 0.3, "dB");
+        v, um, IDs::gain, "Gain", juce::Range{param_limits.lfo_gain_min, param_limits.lfo_gain_max}, 0.3, "dB");
 
     for (auto& c : comps)
     {
         if (c == nullptr)
             continue;
 
-        c->addChangeListener (listener);
         addAndMakeVisible (c->label);
         addAndMakeVisible (c->getComponent());
     }
@@ -302,28 +300,27 @@ int LfoGui::getHeightNeeded()
 }
 
 //==============================================================================
-DelayGui::DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um,
-                    juce::ChangeListener* listener)
+DelayGui::DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um)
 {
     unsigned i = 0;
 
     comps[i++] = std::make_unique<ChoiceComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
     comps[i++] = std::make_unique<SliderComp> (v, um, IDs::mix, "Dry/wet",
-                                               juce::Range{gui_params.delay_mix_min, gui_params.delay_mix_max}, 1);
-
-    comps[i++] = std::make_unique<SliderComp> (v, um, IDs::time, "Time",
-                                               juce::Range{gui_params.delay_time_min, gui_params.delay_time_max}, 1);
+                                               juce::Range{param_limits.delay_mix_min, param_limits.delay_mix_max}, 1);
 
     comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::feedback, "Feedback", juce::Range{gui_params.delay_feedback_min, gui_params.delay_feedback_max}, 1);
+        v, um, IDs::time, "Time", juce::Range{param_limits.delay_time_min, param_limits.delay_time_max}, 1);
+
+    comps[i++] =
+        std::make_unique<SliderComp> (v, um, IDs::feedback, "Feedback",
+                                      juce::Range{param_limits.delay_feedback_min, param_limits.delay_feedback_max}, 1);
 
     for (auto& c : comps)
     {
         if (c == nullptr)
             continue;
 
-        c->addChangeListener (listener);
         addAndMakeVisible (c->label);
         addAndMakeVisible (c->getComponent());
     }

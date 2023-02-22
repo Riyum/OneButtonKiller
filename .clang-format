@@ -12,6 +12,7 @@ AlwaysBreakTemplateDeclarations: 'Yes'
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Allman
 ColumnLimit: '120'
+PenaltyExcessCharacter: '5'
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'
 IndentPPDirectives: BeforeHash

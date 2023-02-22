@@ -5,7 +5,6 @@ BaseComp::BaseComp (const juce::ValueTree& v, juce::UndoManager& um, const juce:
     : propertie (prop), label ("", labelText), state (v), undoManager (um)
 
 {
-    state.addListener (this);
 }
 
 juce::ValueTree BaseComp::getState() const
@@ -23,21 +22,13 @@ juce::UndoManager* BaseComp::getUndoManager() const
     return &undoManager;
 }
 
-void BaseComp::valueTreePropertyChanged (juce::ValueTree& v, const juce::Identifier& p)
-{
-    juce::ignoreUnused (v);
-    if (propertie == p)
-    {
-        sendChangeMessage();
-    }
-}
-
 //==============================================================================
 SliderComp::SliderComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& prop,
                         const juce::String& labelText, juce::Range<double> range, double skew,
                         const juce::String& suffix)
     : BaseComp (v, um, prop, labelText)
 {
+    // std::cout << "Creating SliderComp\n";
     slider.setRange (range.getStart(), range.getEnd(), 0.001);
     slider.setSliderStyle (juce::Slider::SliderStyle::Rotary);
     slider.setTextBoxStyle (juce::Slider::TextEntryBoxPosition::TextBoxBelow, true, 60, 20);
@@ -51,6 +42,11 @@ SliderComp::SliderComp (const juce::ValueTree& v, juce::UndoManager& um, const j
 
     slider.getValueObject().referTo (getState().getPropertyAsValue (prop, getUndoManager()));
     // slider.setValue (v[prop]);
+}
+
+SliderComp::~SliderComp()
+{
+    // std::cout << "Destroying SliderComp\n";
 }
 
 juce::Component* SliderComp::getComponent()
@@ -82,6 +78,13 @@ ChoiceComp::ChoiceComp (const juce::ValueTree& v, juce::UndoManager& um, const j
 
     parameterBox.getSelectedIdAsValue().referTo (getState().getPropertyAsValue (prop, getUndoManager()));
     // parameterBox.setSelectedId (v[prop], juce::NotificationType::dontSendNotification);
+    // std::cout << "Creating ChoiceComp\n";
+}
+
+ChoiceComp::~ChoiceComp()
+{
+
+    // std::cout << "Destroying ChoiceComp\n";
 }
 
 juce::Component* ChoiceComp::getComponent()

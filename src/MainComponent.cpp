@@ -5,7 +5,7 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     : state (st), selectors_state (selectors_st)
 // adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
-    for (unsigned i = 0; i < chains.size(); i++)
+    for (size_t i = 0; i < chains.size(); i++)
     {
         chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
         lfo[i] = std::make_unique<Osc<float>>();
@@ -27,14 +27,15 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
 
     addKeyListener (this);
     initGuiComponents (state, selectors_st);
+    initBroadcasters (state, selectors_st);
 
     startTimer (500);
 
     int main_comp_width = 0, main_comp_height = 0;
-    for (unsigned i = 0; i < osc_comp.size(); i++)
+    for (size_t i = 0; i < osc_comp.size(); i++)
     {
-        main_comp_width += std::max (
-            {getComponentWidth (osc_comp[i]), getComponentWidth (lfo_comp[i]), getComponentWidth (del_comp[i])});
+        main_comp_width +=
+            std::max ({getComponentWidth (osc_comp[i]), getComponentWidth (lfo_comp[i]), getComponentWidth (del_comp[i])});
     }
 
     main_comp_height += getComponentHeight (btn_comp) + gui_sizes.yGap_top;
@@ -79,9 +80,8 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
 
     juce::dsp::AudioBlock<float> audioBlock{*bufferToFill.buffer};
 
-    for (unsigned i = 0, j = 0; i < audio_blocks.size(); ++i, j += 2)
-        audio_blocks[i] =
-            std::make_pair (audioBlock.getSingleChannelBlock (j), audioBlock.getSingleChannelBlock (j + 1));
+    for (size_t i = 0, j = 0; i < audio_blocks.size(); ++i, j += 2)
+        audio_blocks[i] = std::make_pair (audioBlock.getSingleChannelBlock (j), audioBlock.getSingleChannelBlock (j + 1));
 
     // process by sample
     for (auto samp = 0; samp < bufferToFill.numSamples; ++samp)
@@ -101,7 +101,7 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
                 float current_freq =
                     static_cast<float> (getStateParamValue (state, IDs::OSC, IDs::Group::OSC[i], IDs::freq));
 
-                float max_freq = (gui_params.osc_freq_max - current_freq) * lfo_gain;
+                float max_freq = (param_limits.osc_freq_max - current_freq) * lfo_gain;
                 auto lfoOut = lfo[i]->processSample (0.0f);
                 float lfo_mod = juce::jmap (lfoOut, -1.0f, 1.0f, current_freq, max_freq);
 
@@ -158,7 +158,7 @@ void MainComponent::timerCallback()
 
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 {
-    auto comp = dynamic_cast<BaseComp*> (source);
+    auto comp = dynamic_cast<Broadcaster*> (source);
     auto comp_state = comp->getState();
     auto comp_type = comp_state.getParent().getType();
     auto comp_id = comp_state.getType();
@@ -172,7 +172,7 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 
     if (comp_type == IDs::OUTPUT_GAIN || comp_type == IDs::OSC || comp_type == IDs::LFO || comp_type == IDs::DELAY)
     {
-        unsigned idx = static_cast<unsigned> (comp_state.getParent().indexOf (comp_state));
+        size_t idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
         const auto& chain = &chains[idx];
         setChainParams (chain, comp_type, prop, comp_state[prop]);
         return;
@@ -180,7 +180,7 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 
     if (comp_type == IDs::OSC_GUI)
     {
-        unsigned comp_idx = static_cast<unsigned> (comp_state.getParent().indexOf (comp_state));
+        size_t comp_idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
         osc_comp[comp_idx]->setSelector (
             state.getChildWithName (IDs::OSC).getChild (static_cast<int> (comp_state[prop]) - 1));
         return;
@@ -188,7 +188,7 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 
     if (comp_type == IDs::LFO_GUI)
     {
-        unsigned comp_idx = static_cast<unsigned> (comp_state.getParent().indexOf (comp_state));
+        size_t comp_idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
         lfo_comp[comp_idx]->setSelector (
             state.getChildWithName (IDs::LFO).getChild (static_cast<int> (comp_state[prop]) - 1));
         return;
@@ -196,7 +196,7 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 
     if (comp_type == IDs::DELAY_GUI)
     {
-        unsigned comp_idx = static_cast<unsigned> (comp_state.getParent().indexOf (comp_state));
+        size_t comp_idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
         del_comp[comp_idx]->setSelector (
             state.getChildWithName (IDs::DELAY).getChild (static_cast<int> (comp_state[prop]) - 1));
         return;
@@ -215,32 +215,74 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
     addAndMakeVisible (btn_comp.get());
 
     auto const& output_state = v.getChildWithName (IDs::OUTPUT_GAIN);
-    output_comp = std::make_unique<OutputGui> (output_state, undoManager, this);
+    output_comp = std::make_unique<OutputGui> (output_state, undoManager);
     addAndMakeVisible (output_comp.get());
 
-    for (unsigned i = 0; i < osc_comp.size(); i++)
+    for (size_t i = 0; i < osc_comp.size(); i++)
     {
         auto const& osc_state = v.getChildWithName (IDs::OSC).getChildWithName (IDs::Group::OSC[i]);
         auto const& osc_selector_state = vs.getChildWithName (IDs::OSC_GUI).getChildWithName (IDs::Group::OSC[i]);
 
-        osc_comp[i] = std::make_unique<OscGui> (osc_state, osc_selector_state, undoManager, this);
+        osc_comp[i] = std::make_unique<OscGui> (osc_state, osc_selector_state, undoManager);
         if (osc_comp[i].get() != nullptr)
             addAndMakeVisible (osc_comp[i].get());
 
         auto const& lfo_state = v.getChildWithName (IDs::LFO).getChildWithName (IDs::Group::LFO[i]);
         auto const& lfo_selector_state = vs.getChildWithName (IDs::LFO_GUI).getChildWithName (IDs::Group::LFO[i]);
 
-        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, undoManager, this);
+        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, undoManager);
         if (lfo_comp[i].get() != nullptr)
             addAndMakeVisible (lfo_comp[i].get());
 
         auto const& del_state = v.getChildWithName (IDs::DELAY).getChildWithName (IDs::Group::DELAY[i]);
         auto const& del_selector_state = vs.getChildWithName (IDs::DELAY_GUI).getChildWithName (IDs::Group::DELAY[i]);
 
-        del_comp[i] = std::make_unique<DelayGui> (del_state, del_selector_state, undoManager, this);
+        del_comp[i] = std::make_unique<DelayGui> (del_state, del_selector_state, undoManager);
         if (del_comp[i].get() != nullptr)
             addAndMakeVisible (del_comp[i].get());
     }
+}
+
+void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs)
+{
+
+    broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OUTPUT_GAIN), IDs::master));
+
+    for (auto& chan_id : IDs::Group::CHAN)
+        broadcasters.push_back (
+            std::make_unique<Broadcaster> (v.getChildWithName (IDs::OUTPUT_GAIN).getChildWithName (chan_id), IDs::gain));
+
+    for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
+    {
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::wavetype));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::freq));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::gain));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::fm_freq));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::fm_depth));
+
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::wavetype));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::freq));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::gain));
+
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::mix));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::time));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::feedback));
+    }
+
+    // selectros broadcasters
+    for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 4; ++i)
+    {
+        broadcasters.push_back (std::make_unique<Broadcaster> (
+            vs.getChildWithName (IDs::OSC_GUI).getChildWithName (IDs::Group::OSC[i]), IDs::selector));
+        broadcasters.push_back (std::make_unique<Broadcaster> (
+            vs.getChildWithName (IDs::LFO_GUI).getChildWithName (IDs::Group::LFO[i]), IDs::selector));
+        broadcasters.push_back (std::make_unique<Broadcaster> (
+            vs.getChildWithName (IDs::DELAY_GUI).getChildWithName (IDs::Group::DELAY[i]), IDs::selector));
+    }
+
+    for (auto& b : broadcasters)
+        if (b.get() != nullptr)
+            b->addChangeListener (this);
 }
 
 // juce::var MainComponent::getParamValue (const juce::Identifier& parent, const juce::Identifier& node,
@@ -412,97 +454,59 @@ void MainComponent::generateRandomParameters()
     std::random_device rd;
     std::mt19937 gen (rd());
 
-    std::uniform_int_distribution<> osc_type (gui_params.osc_waveType_min, 3);
-    std::uniform_real_distribution<> osc_freq (gui_params.osc_freq_min, gui_params.osc_freq_max);
-    std::uniform_real_distribution<> osc_fm_freq (gui_params.osc_fm_freq_min, gui_params.osc_fm_freq_max);
-    std::uniform_real_distribution<> osc_fm_depth (gui_params.osc_fm_depth_min, gui_params.osc_fm_depth_max);
+    std::uniform_int_distribution<> osc_type (param_limits.osc_waveType_min, 3);
+    std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.osc_freq_max);
+    std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
+    std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
 
-    std::uniform_int_distribution<> lfo_type (gui_params.lfo_waveType_min, 3);
-    std::uniform_real_distribution<> lfo_freq (gui_params.lfo_freq_min, gui_params.lfo_freq_max);
-    std::uniform_real_distribution<> lfo_gain (gui_params.lfo_gain_min, gui_params.lfo_gain_max);
+    std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 3);
+    std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
+    std::uniform_real_distribution<> lfo_gain (param_limits.lfo_gain_min, param_limits.lfo_gain_max);
 
-    std::uniform_real_distribution<> del_mix (gui_params.delay_mix_min, gui_params.delay_mix_max);
-    std::uniform_real_distribution<> del_time (gui_params.delay_time_min, gui_params.delay_time_max);
-    std::uniform_real_distribution<> del_feedback (gui_params.delay_feedback_min, gui_params.delay_feedback_max);
+    std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
+    std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
+    std::uniform_real_distribution<> del_feedback (param_limits.delay_feedback_min, param_limits.delay_feedback_max);
 
-    std::vector<int> selected_osc;
-    std::vector<int> selected_lfo;
-    std::vector<int> selected_del;
+    std::uniform_real_distribution<> per (0, 50);
 
-    for (auto v : selectors_state.getChildWithName (IDs::OSC_GUI))
-        selected_osc.push_back (static_cast<int> (v.getProperty (IDs::selector)) - 1);
+    // unique indexes
+    std::array<int, NUM_OUTPUT_CHANNELS / 2> indexs_range;
+    std::iota (indexs_range.begin(), indexs_range.end(), 0);
+    std::shuffle (indexs_range.begin(), indexs_range.end(), gen);
+    std::array<int, NUM_OUTPUT_CHANNELS / 4> indexes;
+    std::copy (indexs_range.begin(), indexs_range.begin() + NUM_OUTPUT_CHANNELS / 4, indexes.begin());
 
-    for (auto v : selectors_state.getChildWithName (IDs::LFO_GUI))
-        selected_lfo.push_back (static_cast<int> (v.getProperty (IDs::selector)) - 1);
+    const auto& osc_states = state.getChildWithName (IDs::OSC);
+    const auto& lfo_states = state.getChildWithName (IDs::LFO);
+    const auto& del_states = state.getChildWithName (IDs::DELAY);
 
-    for (auto v : selectors_state.getChildWithName (IDs::DELAY_GUI))
-        selected_del.push_back (static_cast<int> (v.getProperty (IDs::selector)) - 1);
-
-    for (auto osc_parameters : state.getChildWithName (IDs::OSC))
+    for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
     {
-        int wavetype = osc_type (gen);
-        double freq = osc_freq (gen);
-        double fm_freq = osc_fm_freq (gen);
-        double fm_depth = osc_fm_depth (gen);
+        osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), &undoManager);
+        osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), &undoManager);
+        osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), &undoManager);
+        // osc_states.getChild (i).setProperty (IDs::freq, osc_freq (gen), &undoManager);
+        osc_states.getChild (i).setProperty (IDs::fm_freq, osc_fm_freq (gen), &undoManager);
+        osc_states.getChild (i).setProperty (IDs::fm_depth, osc_fm_depth (gen), &undoManager);
 
-        osc_parameters.setProperty (IDs::wavetype, wavetype, &undoManager);
-        osc_parameters.setProperty (IDs::freq, freq, &undoManager);
-        osc_parameters.setProperty (IDs::fm_freq, fm_freq, &undoManager);
-        osc_parameters.setProperty (IDs::fm_depth, fm_depth, &undoManager);
+        if (std::find (indexes.begin(), indexes.end(), i) != indexes.end())
+        {
+            lfo_states.getChild (i).setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
+            lfo_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.lfo_freq_max, per (gen)),
+                                                 &undoManager);
+            lfo_states.getChild (i).setProperty (IDs::gain, percentageFrom (param_limits.lfo_gain_max, per (gen)),
+                                                 &undoManager);
+        }
+        else
+        {
+            lfo_states.getChild (i).setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
+            lfo_states.getChild (i).setProperty (IDs::freq, lfo_freq (gen), &undoManager);
+            lfo_states.getChild (i).setProperty (IDs::gain, lfo_gain (gen), &undoManager);
+        }
 
-        // applying changes to audio components that currently without gui representation
-        size_t current_osc = static_cast<size_t> (state.getChildWithName (IDs::OSC).indexOf (osc_parameters));
-        auto it = std::find (selected_osc.begin(), selected_osc.end(), current_osc);
-
-        if (it != selected_osc.end())
-            continue;
-
-        setChainParams (&chains[current_osc], IDs::OSC, IDs::wavetype, wavetype);
-        setChainParams (&chains[current_osc], IDs::OSC, IDs::freq, freq);
-        setChainParams (&chains[current_osc], IDs::OSC, IDs::fm_freq, fm_freq);
-        setChainParams (&chains[current_osc], IDs::OSC, IDs::fm_depth, fm_depth);
-    }
-
-    for (auto lfo_parameters : state.getChildWithName (IDs::LFO))
-    {
-        int wavetype = lfo_type (gen);
-        double freq = lfo_freq (gen);
-        double gain = lfo_gain (gen);
-
-        lfo_parameters.setProperty (IDs::wavetype, wavetype, &undoManager);
-        lfo_parameters.setProperty (IDs::freq, freq, &undoManager);
-        lfo_parameters.setProperty (IDs::gain, gain, &undoManager);
-
-        size_t current_lfo = static_cast<size_t> (state.getChildWithName (IDs::LFO).indexOf (lfo_parameters));
-        auto it = std::find (selected_lfo.begin(), selected_lfo.end(), current_lfo);
-
-        if (it != selected_lfo.end())
-            continue;
-
-        setChainParams (&chains[current_lfo], IDs::LFO, IDs::wavetype, wavetype);
-        setChainParams (&chains[current_lfo], IDs::LFO, IDs::freq, freq);
-        setChainParams (&chains[current_lfo], IDs::LFO, IDs::gain, gain);
-    }
-
-    for (auto del_parameters : state.getChildWithName (IDs::DELAY))
-    {
-        double mix = del_mix (gen);
-        double time = del_time (gen);
-        double feedback = del_feedback (gen);
-
-        del_parameters.setProperty (IDs::mix, mix, &undoManager);
-        del_parameters.setProperty (IDs::time, time, &undoManager);
-        del_parameters.setProperty (IDs::feedback, feedback, &undoManager);
-
-        size_t current_del = static_cast<size_t> (state.getChildWithName (IDs::DELAY).indexOf (del_parameters));
-        auto it = std::find (selected_del.begin(), selected_del.end(), current_del);
-
-        if (it != selected_del.end())
-            continue;
-
-        setChainParams (&chains[current_del], IDs::DELAY, IDs::mix, mix);
-        setChainParams (&chains[current_del], IDs::DELAY, IDs::time, time);
-        setChainParams (&chains[current_del], IDs::DELAY, IDs::feedback, feedback);
+        del_states.getChild (i).setProperty (IDs::mix, del_mix (gen), &undoManager);
+        del_states.getChild (i).setProperty (IDs::time, del_time (gen), &undoManager);
+        del_states.getChild (i).setProperty (IDs::feedback, del_feedback (gen), &undoManager);
     }
 }
 

@@ -68,6 +68,7 @@ private:
     size_t lfoUpdateCounter = def_params.lfoUpdateRate;
     std::array<std::unique_ptr<Osc<float>>, NUM_OUTPUT_CHANNELS / 2> lfo;
 
+    std::vector<std::unique_ptr<Broadcaster>> broadcasters;
     juce::ValueTree state;
     juce::ValueTree selectors_state;
     juce::UndoManager undoManager;
@@ -85,6 +86,7 @@ private:
     void changeListenerCallback (juce::ChangeBroadcaster* source) override;
 
     void initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs);
+    void initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs);
 
     juce::var getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
                                   const juce::Identifier& node, const juce::Identifier& propertie);
@@ -92,8 +94,7 @@ private:
     template <typename T, typename Func, typename... O>
     void setChainParams (T val, Func f, O*... obj);
     template <typename T>
-    void setChainParams (StereoChain* chain, const juce::Identifier& comp_type, const juce::Identifier& propertie,
-                         T val);
+    void setChainParams (StereoChain* chain, const juce::Identifier& comp_type, const juce::Identifier& propertie, T val);
 
     void setDefaultParameterValues();
 
