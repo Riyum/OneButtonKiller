@@ -1,18 +1,28 @@
 #pragma once
 
-#include "Osc.h"
 #include <JuceHeader.h>
 #include <array>
 
 // Constatns
 //==============================================================================
+
 inline constexpr int NUM_INPUT_CHANNELS = 0;
 inline constexpr int NUM_OUTPUT_CHANNELS = 8;
+
+enum WaveType
+{
+    SIN = 1,
+    SAW,
+    SQR,
+    WSIN,
+    WSAW,
+    WSQR
+};
 
 inline constexpr struct _Default_Parameters
 {
     float master_gain = 0.7; // linear
-    float chan_gain = -10;   // dB
+    float chan_gain = 0;     // dB
 
     WaveType osc_wavetype = WaveType::SIN;
     double osc_freq = 440;
@@ -45,7 +55,7 @@ inline constexpr struct _Parameter_Limits
     double osc_freq_min = 0, osc_freq_max = 24000;
     double osc_gain_min = -100, osc_gain_max = 0;
     double osc_fm_freq_min = 0, osc_fm_freq_max = 150;
-    double osc_fm_depth_min = 0, osc_fm_depth_max = 10000;
+    double osc_fm_depth_min = 0, osc_fm_depth_max = 1;
 
     int lfo_waveType_min = 1, lfo_waveType_max = 6;
     double lfo_freq_min = 0, lfo_freq_max = 40;

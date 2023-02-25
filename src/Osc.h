@@ -1,17 +1,8 @@
 #pragma once
 
+#include "Constants.h"
 #include <JuceHeader.h>
 #include <atomic>
-
-enum WaveType
-{
-    SIN = 1,
-    SAW,
-    SQR,
-    WSIN,
-    WSAW,
-    WSQR
-};
 
 template <typename Type>
 class Osc

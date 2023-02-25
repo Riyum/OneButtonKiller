@@ -23,6 +23,8 @@
       <FILE id="olQrca" name="Osc.cpp" compile="1" resource="0" file="src/Osc.cpp"/>
       <FILE id="S4y2qY" name="Delay.h" compile="0" resource="0" file="src/Delay.h"/>
       <FILE id="fGyMWz" name="Delay.cpp" compile="1" resource="0" file="src/Delay.cpp"/>
+      <FILE id="SZ1KSF" name="Lfo.cpp" compile="1" resource="0" file="src/Lfo.cpp"/>
+      <FILE id="MpzESO" name="Lfo.h" compile="0" resource="0" file="src/Lfo.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>

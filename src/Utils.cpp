@@ -61,7 +61,7 @@ juce::ValueTree createDefaultTree()
 
         juce::ValueTree osc{IDs::Group::OSC[i],
                             {{IDs::wavetype, def_params.osc_wavetype},
-                             {IDs::freq, def_params.osc_freq},
+                             {IDs::freq, def_params.osc_freq + i*10},
                              {IDs::gain, def_params.osc_gain},
                              {IDs::fm_freq, def_params.osc_fm_freq},
                              {IDs::fm_depth, def_params.osc_fm_depth}}};

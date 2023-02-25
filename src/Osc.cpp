@@ -125,7 +125,6 @@ template <typename Type>
 template <typename ProcessContext>
 void Osc<Type>::process (const ProcessContext& context) noexcept
 {
-
     auto& inputBlock = context.getInputBlock();
     auto& outputBlock = context.getOutputBlock();
     auto numSamples = outputBlock.getNumSamples();
@@ -138,13 +137,10 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
 
         for (size_t i = 0; i < numSamples; ++i)
         {
-            float mod = fm.processSample (0.0f) * fm_depth;
-            float freq = freq_base + mod;
-
-            if (freq > 0)
-                pc.template get<ProcIdx::OSC>().setFrequency (freq_base + mod);
-            else
-                pc.template get<ProcIdx::OSC>().setFrequency (0.001f);
+            Type fm_val = fm.processSample (0.f);
+            Type max = param_limits.osc_freq_max;
+            auto mod = juce::jmap (fm_val, -1.f, 1.f, -1 * freq_base, max);
+            pc.template get<ProcIdx::OSC>().setFrequency (freq_base + mod * fm_depth);
 
             if (bypass.load())
                 pc.template get<ProcIdx::OSC>().processSample (input[i]);
@@ -175,5 +171,5 @@ void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 // Explicit template instantiations to satisfy the linker
 
 template class Osc<float>;
-template void Osc<float>::process<juce::dsp::ProcessContextReplacing<float>> (
-    const juce::dsp::ProcessContextReplacing<float>& context);
+template void
+Osc<float>::process<juce::dsp::ProcessContextReplacing<float>> (const juce::dsp::ProcessContextReplacing<float>& context);

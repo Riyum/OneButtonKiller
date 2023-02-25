@@ -8,7 +8,9 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     for (size_t i = 0; i < chains.size(); i++)
     {
         chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
-        lfo[i] = std::make_unique<Osc<float>>();
+        lfo[i] = std::make_unique<Lfo<float>>();
+        lfo[i]->addOscillator (chains[i].first->get<ProcIdx::OSC>(), chains[i].second->get<ProcIdx::OSC>(),
+                               st.getChildWithName (IDs::OSC).getChild (i));
     }
 
     // Some platforms require permissions to open input channels so request that here
@@ -90,24 +92,7 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
         {
             lfoUpdateCounter = def_params.lfoUpdateRate;
             for (size_t i = 0; i < lfo.size(); i++)
-            {
-                float lfo_gain = lfo[i]->getGainLinear();
-
-                if (lfo_gain == 0)
-                    continue;
-
-                // since the lfo constantly changing the base frequency, Im getting it from the state
-                // if the lfo applied directly on the osc frequency (setFrequency()) it will break the FM modulation
-                float current_freq =
-                    static_cast<float> (getStateParamValue (state, IDs::OSC, IDs::Group::OSC[i], IDs::freq));
-
-                float max_freq = (param_limits.osc_freq_max - current_freq) * lfo_gain;
-                auto lfoOut = lfo[i]->processSample (0.0f);
-                float lfo_mod = juce::jmap (lfoOut, -1.0f, 1.0f, current_freq, max_freq);
-
-                chains[i].first->get<ProcIdx::OSC>().setBaseFrequency (lfo_mod);
-                chains[i].second->get<ProcIdx::OSC>().setBaseFrequency (lfo_mod);
-            }
+                lfo[i]->process();
         }
         --lfoUpdateCounter;
     }
@@ -395,7 +380,7 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
         if (propertie == IDs::gain)
         {
-            lfo[idx]->setGainLinear (val);
+            lfo[idx]->setGain (val);
             return;
         }
     }

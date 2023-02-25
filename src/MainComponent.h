@@ -4,6 +4,7 @@
 #include "Constants.h"
 #include "Delay.h"
 #include "GuiComponents.h"
+#include "Lfo.h"
 #include "Osc.h"
 #include "Utils.h"
 #include <JuceHeader.h>
@@ -65,8 +66,9 @@ private:
     using StereoBlock = std::pair<juce::dsp::AudioBlock<float>, juce::dsp::AudioBlock<float>>;
     std::array<StereoBlock, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
 
+    // LFO
     size_t lfoUpdateCounter = def_params.lfoUpdateRate;
-    std::array<std::unique_ptr<Osc<float>>, NUM_OUTPUT_CHANNELS / 2> lfo;
+    std::array<std::unique_ptr<Lfo<float>>, NUM_OUTPUT_CHANNELS / 2> lfo;
 
     std::vector<std::unique_ptr<Broadcaster>> broadcasters;
     juce::ValueTree state;

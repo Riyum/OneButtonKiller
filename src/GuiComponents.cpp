@@ -59,9 +59,8 @@ OutputGui::OutputGui (const juce::ValueTree& v, juce::UndoManager& um)
         if (i != 0)
         {
             const auto& ch_node = v.getChildWithName (IDs::Group::CHAN[i - 1]);
-            comps[i] =
-                std::make_unique<SliderComp> (ch_node, um, IDs::gain, "Ch" + std::to_string (i),
-                                              juce::Range{param_limits.chan_min, param_limits.chan_max}, 1, "dB");
+            comps[i] = std::make_unique<SliderComp> (ch_node, um, IDs::gain, "Ch" + std::to_string (i),
+                                                     juce::Range{param_limits.chan_min, param_limits.chan_max}, 3, "dB");
         }
         else
             comps[i] = std::make_unique<SliderComp> (
@@ -115,13 +114,11 @@ OscGui::OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoM
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::gain, "Gain", juce::Range{param_limits.osc_gain_min, param_limits.osc_gain_max}, 3.0, "dB");
 
-    comps[i++] =
-        std::make_unique<SliderComp> (v, um, IDs::fm_freq, "FM freq",
-                                      juce::Range{param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max}, 1, "Hz");
+    comps[i++] = std::make_unique<SliderComp> (
+        v, um, IDs::fm_freq, "FM freq", juce::Range{param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max}, 1, "Hz");
 
-    comps[i] =
-        std::make_unique<SliderComp> (v, um, IDs::fm_depth, "FM depth",
-                                      juce::Range{param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max}, 0.7);
+    comps[i] = std::make_unique<SliderComp> (
+        v, um, IDs::fm_depth, "FM depth", juce::Range{param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max}, 0.3);
 
     for (auto& c : comps)
     {
@@ -155,8 +152,7 @@ void OscGui::resized()
         {
             c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), gui_sizes.selector_box_width),
                                         c->getPreferredHeight());
-            c->getComponent()->setTopLeftPosition (
-                boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
+            c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
             continue;
         }
 
@@ -167,8 +163,7 @@ void OscGui::resized()
             c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft());
             continue;
         }
-        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()),
-                                    c->getPreferredHeight());
+        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()), c->getPreferredHeight());
         c->getComponent()->setTopLeftPosition (
             slider_bounds.removeFromLeft (c->getPreferredWidth() + 2).getTopLeft().translated (0, 35 + 30));
     }
@@ -188,8 +183,7 @@ void OscGui::setSelector (const juce::ValueTree& v)
             slider->getValueObject().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
 
         else if (auto comboBox = dynamic_cast<juce::ComboBox*> (c->getComponent()))
-            comboBox->getSelectedIdAsValue().referTo (
-                c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+            comboBox->getSelectedIdAsValue().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
     }
 }
 
@@ -250,8 +244,7 @@ void LfoGui::resized()
         {
             c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), gui_sizes.selector_box_width),
                                         c->getPreferredHeight());
-            c->getComponent()->setTopLeftPosition (
-                boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
+            c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
             continue;
         }
 
@@ -262,8 +255,7 @@ void LfoGui::resized()
             c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft());
             continue;
         }
-        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()),
-                                    c->getPreferredHeight());
+        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()), c->getPreferredHeight());
         slider_bounds.removeFromLeft (slider_xGap);
         c->getComponent()->setTopLeftPosition (
             slider_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft().translated (0, 35 + 30));
@@ -283,8 +275,7 @@ void LfoGui::setSelector (const juce::ValueTree& v)
             slider->getValueObject().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
 
         else if (auto comboBox = dynamic_cast<juce::ComboBox*> (c->getComponent()))
-            comboBox->getSelectedIdAsValue().referTo (
-                c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+            comboBox->getSelectedIdAsValue().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
     }
 }
 
@@ -309,8 +300,8 @@ DelayGui::DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::U
     comps[i++] = std::make_unique<SliderComp> (v, um, IDs::mix, "Dry/wet",
                                                juce::Range{param_limits.delay_mix_min, param_limits.delay_mix_max}, 1);
 
-    comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::time, "Time", juce::Range{param_limits.delay_time_min, param_limits.delay_time_max}, 1);
+    comps[i++] = std::make_unique<SliderComp> (v, um, IDs::time, "Time",
+                                               juce::Range{param_limits.delay_time_min, param_limits.delay_time_max}, 1);
 
     comps[i++] =
         std::make_unique<SliderComp> (v, um, IDs::feedback, "Feedback",
@@ -347,13 +338,11 @@ void DelayGui::resized()
         {
             c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), gui_sizes.selector_box_width),
                                         c->getPreferredHeight());
-            c->getComponent()->setTopLeftPosition (
-                boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
+            c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
             continue;
         }
 
-        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()),
-                                    c->getPreferredHeight());
+        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()), c->getPreferredHeight());
         slider_bounds.removeFromLeft (slider_xGap);
         c->getComponent()->setTopLeftPosition (
             slider_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft().translated (0, 35 + 30));
