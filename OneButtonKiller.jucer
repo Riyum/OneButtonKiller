@@ -5,6 +5,7 @@
               companyName="Darkatnya">
   <MAINGROUP id="XqkzOp" name="OneButtonKiller">
     <GROUP id="{E316A153-17FD-81AA-87DA-EE039D3D4E83}" name="src">
+      <FILE id="J0qBQe" name="Chain.h" compile="0" resource="0" file="src/Chain.h"/>
       <FILE id="lhsvy4" name="Constants.h" compile="0" resource="0" file="src/Constants.h"/>
       <FILE id="LjHQGq" name="Main.cpp" compile="1" resource="0" file="src/Main.cpp"/>
       <FILE id="wYfbIu" name="MainComponent.h" compile="0" resource="0" file="src/MainComponent.h"/>

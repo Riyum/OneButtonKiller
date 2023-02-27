@@ -138,7 +138,7 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
         for (size_t i = 0; i < numSamples; ++i)
         {
             Type fm_val = fm.processSample (0.f);
-            Type max = param_limits.osc_freq_max;
+            Type max = param_limits.osc_freq_max - freq_base;
             auto mod = juce::jmap (fm_val, -1.f, 1.f, -1 * freq_base, max);
             pc.template get<ProcIdx::OSC>().setFrequency (freq_base + mod * fm_depth);
 

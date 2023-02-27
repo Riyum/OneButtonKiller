@@ -4,6 +4,7 @@
 #include "Constants.h"
 #include <JuceHeader.h>
 #include <array>
+#include <functional>
 
 // Helpers
 //==============================================================================
@@ -32,7 +33,7 @@ private:
 class OutputGui : public juce::Component
 {
 public:
-    OutputGui (const juce::ValueTree& v, juce::UndoManager& um);
+    OutputGui (juce::ValueTree& v, juce::UndoManager* um);
     void paint (juce::Graphics& g) override;
     void resized() override;
     int getWidthNeeded();
@@ -49,10 +50,10 @@ private:
 class OscGui : public juce::Component
 {
 public:
-    OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um);
+    OscGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um);
     void paint (juce::Graphics& g) override;
     void resized() override;
-    void setSelector (const juce::ValueTree& v);
+    void setSelector (juce::ValueTree v, juce::UndoManager* um);
     int getWidthNeeded();
     int getHeightNeeded();
 
@@ -67,16 +68,19 @@ private:
 class LfoGui : public juce::Component
 {
 public:
-    LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um);
+    LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const juce::StringArray& comp_des,
+            std::vector<MenuItems> _route_options, const std::function<void (std::vector<MenuItems>&, const int)> func);
     void paint (juce::Graphics& g) override;
     void resized() override;
-    void setSelector (const juce::ValueTree& v);
+    void setSelector (juce::ValueTree v, juce::UndoManager* um);
     int getWidthNeeded();
     int getHeightNeeded();
 
 private:
-    static constexpr int NUM_OF_COMPONENTS = 4;
+    static constexpr int NUM_OF_COMPONENTS = 5;
     std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
+    std::vector<MenuItems> route_options;
+    const std::function<void (std::vector<MenuItems>&, const int)> updateLfoRouteOptions;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LfoGui)
 };
@@ -85,10 +89,10 @@ private:
 class DelayGui : public juce::Component
 {
 public:
-    DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um);
+    DelayGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um);
     void paint (juce::Graphics& g) override;
     void resized() override;
-    void setSelector (const juce::ValueTree& v);
+    void setSelector (juce::ValueTree v, juce::UndoManager* um);
     int getWidthNeeded();
     int getHeightNeeded();
 

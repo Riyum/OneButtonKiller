@@ -1,23 +1,28 @@
 #pragma once
 
+#include "Chain.h"
 #include "Constants.h"
 #include "Osc.h"
 #include <JuceHeader.h>
+#include <functional>
 
 template <typename Type>
 class Lfo
 {
 public:
-    Lfo();
+    Lfo (StereoChain& _chain, const size_t _id, const juce::ValueTree& _state);
 
-    void setFrequency (const Type newValue);
-    Type getFrequency();
-    void setGain (const Type newValue);
-    Type getGain();
     void setWaveType (const WaveType choice);
 
-    void addOscillator (Osc<Type>& left, Osc<Type>& right, const juce::ValueTree& v);
-    void removeOscillator (Osc<Type>& oscillator);
+    void setFrequency (const Type newValue);
+    Type getFrequency() const;
+
+    void setGain (const Type newValue);
+    Type getGain() const;
+
+    void setComp (const juce::Identifier& comp_type);
+    void setProp (const juce::Identifier& _prop, Type max);
+    void setCompWithProp (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max);
 
     void reset() noexcept;
     void process();
@@ -29,14 +34,14 @@ private:
     Type frequency;
     Type gain;
 
-    struct OscillatorInfo
-    {
-        Osc<Type>& l;
-        Osc<Type>& r;
-        juce::ValueTree state;
-    };
+    StereoChain& chain;
+    const size_t chain_id;
+    juce::ValueTree state;
+    juce::ValueTree comp_state;
 
-    juce::OwnedArray<OscillatorInfo> oscs;
+    std::function<void (const Type)> left, right;
+    juce::Identifier prop;
+    Type maxOut;
 
     Lfo (const Lfo&) = delete;
     Lfo& operator= (const Lfo&) = delete;

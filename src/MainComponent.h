@@ -1,12 +1,12 @@
 #pragma once
 
+#include "Chain.h"
 #include "ComponentWrappers.h"
 #include "Constants.h"
-#include "Delay.h"
 #include "GuiComponents.h"
 #include "Lfo.h"
-#include "Osc.h"
 #include "Utils.h"
+
 #include <JuceHeader.h>
 #include <algorithm>
 #include <array>
@@ -42,28 +42,7 @@ public:
 
 private:
     //==============================================================================
-    using _Gain = juce::dsp::Gain<float>;
-    using _OSC = Osc<float>;
-    using _DEL = Delay<float, 1>;
-
-    enum ProcIdx
-    {
-        OSC,
-        DEL,
-        CHAN_GAIN,
-        MASTER_GAIN
-    };
-
-    // Chain definition
-    // signal flow: ... ---> Gain (channel) ---> Gain (master) ----> out
-    using Chain = juce::dsp::ProcessorChain<_OSC, _DEL, _Gain, _Gain>;
-
-    // we need two chains for each stereo output channel
-    using StereoChain = std::pair<std::unique_ptr<Chain>, std::unique_ptr<Chain>>;
     std::array<StereoChain, NUM_OUTPUT_CHANNELS / 2> chains;
-
-    // each (stereo)chain need its own (stereo)block
-    using StereoBlock = std::pair<juce::dsp::AudioBlock<float>, juce::dsp::AudioBlock<float>>;
     std::array<StereoBlock, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
 
     // LFO
@@ -89,6 +68,8 @@ private:
 
     void initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs);
     void initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs);
+    std::vector<MenuItems> initLfoRouteOptions (const int lfo_idx);
+    void updateLfoRouteOptions (std::vector<MenuItems>& lro, const int lfo_idx);
 
     juce::var getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
                                   const juce::Identifier& node, const juce::Identifier& propertie);

@@ -51,14 +51,14 @@ int ButtonsGui::getHeightNeeded()
 }
 
 //==============================================================================
-OutputGui::OutputGui (const juce::ValueTree& v, juce::UndoManager& um)
+OutputGui::OutputGui (juce::ValueTree& v, juce::UndoManager* um)
 {
 
     for (unsigned i = 0; i < comps.size(); ++i)
     {
         if (i != 0)
         {
-            const auto& ch_node = v.getChildWithName (IDs::Group::CHAN[i - 1]);
+            auto ch_node = v.getChildWithName (IDs::Group::CHAN[i - 1]);
             comps[i] = std::make_unique<SliderComp> (ch_node, um, IDs::gain, "Ch" + std::to_string (i),
                                                      juce::Range{param_limits.chan_min, param_limits.chan_max}, 3, "dB");
         }
@@ -99,14 +99,14 @@ int OutputGui::getHeightNeeded()
 }
 
 //==============================================================================
-OscGui::OscGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um)
+OscGui::OscGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
 {
     unsigned i = 0;
 
-    comps[i++] = std::make_unique<ChoiceComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
+    comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
-    comps[i++] = std::make_unique<ChoiceComp> (v, um, IDs::wavetype, "",
-                                               juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
+    comps[i++] = std::make_unique<ComboComp> (v, um, IDs::wavetype, "",
+                                              juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
 
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{param_limits.osc_freq_min, param_limits.osc_freq_max}, 0.4, "Hz");
@@ -169,21 +169,18 @@ void OscGui::resized()
     }
 }
 
-void OscGui::setSelector (const juce::ValueTree& v)
+void OscGui::setSelector (juce::ValueTree v, juce::UndoManager* um)
 {
     for (auto& c : comps)
     {
-
         if (c->propertie == IDs::selector)
             continue;
 
-        c->setState (v);
-
         if (auto slider = dynamic_cast<juce::Slider*> (c->getComponent()))
-            slider->getValueObject().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+            slider->getValueObject().referTo (v.getPropertyAsValue (c->propertie, um));
 
         else if (auto comboBox = dynamic_cast<juce::ComboBox*> (c->getComponent()))
-            comboBox->getSelectedIdAsValue().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+            comboBox->getSelectedIdAsValue().referTo (v.getPropertyAsValue (c->propertie, um));
     }
 }
 
@@ -198,20 +195,24 @@ int OscGui::getHeightNeeded()
 }
 
 //==============================================================================
-LfoGui::LfoGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um)
+LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const juce::StringArray& comp_des,
+                std::vector<MenuItems> _route_options, const std::function<void (std::vector<MenuItems>&, const int)> func)
+    : route_options (_route_options), updateLfoRouteOptions (func)
 {
     unsigned i = 0;
 
-    comps[i++] = std::make_unique<ChoiceComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
+    comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
-    comps[i++] = std::make_unique<ChoiceComp> (v, um, IDs::wavetype, "",
-                                               juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
+    comps[i++] = std::make_unique<ComboComp> (v, um, IDs::wavetype, "",
+                                              juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
+
+    comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", comp_des, route_options);
 
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{param_limits.lfo_freq_min, param_limits.lfo_freq_max}, 0.6, "Hz");
 
-    comps[i++] = std::make_unique<SliderComp> (
-        v, um, IDs::gain, "Gain", juce::Range{param_limits.lfo_gain_min, param_limits.lfo_gain_max}, 0.3, "dB");
+    comps[i++] = std::make_unique<SliderComp> (v, um, IDs::gain, "Gain",
+                                               juce::Range{param_limits.lfo_gain_min, param_limits.lfo_gain_max}, 0.3);
 
     for (auto& c : comps)
     {
@@ -233,7 +234,7 @@ void LfoGui::resized()
     auto boxes_bounds = getLocalBounds().withTrimmedLeft (gui_sizes.comp_title_font * 3);
     boxes_bounds.removeFromTop (5);
     auto slider_bounds = getLocalBounds().removeFromTop (5);
-    int slider_xGap = 10;
+    int slider_xGap = 50;
 
     for (auto& c : comps)
     {
@@ -255,34 +256,49 @@ void LfoGui::resized()
             c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft());
             continue;
         }
+
+        if (c->propertie == IDs::route)
+        {
+            c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), gui_sizes.route_box_width),
+                                        c->getPreferredHeight());
+            auto b = boxes_bounds.removeFromRight (gui_sizes.route_box_width).getTopRight();
+            c->getComponent()->setTopRightPosition (b.getX() - 5, b.getY());
+            continue;
+        }
+
         c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()), c->getPreferredHeight());
         slider_bounds.removeFromLeft (slider_xGap);
-        c->getComponent()->setTopLeftPosition (
-            slider_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft().translated (0, 35 + 30));
+        c->getComponent()->setCentrePosition (
+            slider_bounds.removeFromLeft (c->getPreferredWidth()).getCentre().translated (0, 98));
     }
 }
 
-void LfoGui::setSelector (const juce::ValueTree& v)
+void LfoGui::setSelector (juce::ValueTree v, juce::UndoManager* um)
 {
     for (auto& c : comps)
     {
         if (c->propertie == IDs::selector)
             continue;
 
-        c->setState (v);
-
         if (auto slider = dynamic_cast<juce::Slider*> (c->getComponent()))
-            slider->getValueObject().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+            slider->getValueObject().referTo (v.getPropertyAsValue (c->propertie, um));
 
         else if (auto comboBox = dynamic_cast<juce::ComboBox*> (c->getComponent()))
-            comboBox->getSelectedIdAsValue().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+        {
+            if (c->propertie == IDs::route)
+            {
+                auto menu = dynamic_cast<PopupComp*> (c.get());
+                updateLfoRouteOptions (route_options, v.getParent().indexOf (v));
+                menu->updateMenu (route_options);
+            }
+            comboBox->getSelectedIdAsValue().referTo (v.getPropertyAsValue (c->propertie, um));
+        }
     }
 }
 
 int LfoGui::getWidthNeeded()
 {
-
-    return 180;
+    return 300;
 }
 
 int LfoGui::getHeightNeeded()
@@ -291,11 +307,11 @@ int LfoGui::getHeightNeeded()
 }
 
 //==============================================================================
-DelayGui::DelayGui (const juce::ValueTree& v, const juce::ValueTree& vs, juce::UndoManager& um)
+DelayGui::DelayGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
 {
     unsigned i = 0;
 
-    comps[i++] = std::make_unique<ChoiceComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
+    comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
     comps[i++] = std::make_unique<SliderComp> (v, um, IDs::mix, "Dry/wet",
                                                juce::Range{param_limits.delay_mix_min, param_limits.delay_mix_max}, 1);
@@ -349,17 +365,15 @@ void DelayGui::resized()
     }
 }
 
-void DelayGui::setSelector (const juce::ValueTree& v)
+void DelayGui::setSelector (juce::ValueTree v, juce::UndoManager* um)
 {
     for (auto& c : comps)
     {
         if (c->propertie == IDs::selector)
             continue;
 
-        c->setState (v);
-
         if (auto slider = dynamic_cast<juce::Slider*> (c->getComponent()))
-            slider->getValueObject().referTo (c->getState().getPropertyAsValue (c->propertie, c->getUndoManager()));
+            slider->getValueObject().referTo (v.getPropertyAsValue (c->propertie, um));
     }
 }
 

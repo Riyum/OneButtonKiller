@@ -1,6 +1,8 @@
 #pragma once
 #include <JuceHeader.h>
 
+using MenuItems = std::vector<juce::PopupMenu::Item>;
+
 // It doesn't matter which, but BaseComp need to derive from some juce class
 // it seems that without the inheritance, instances of the derived classes from BaseComp
 // are not properly deleted on app exit, and I get memory leaks
@@ -8,29 +10,16 @@
 class BaseComp : public juce::ReferenceCountedObject
 {
 public:
-    BaseComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& prop,
-              const juce::String& labelText);
+    BaseComp (const juce::Identifier& prop, const juce::String& labelText);
 
     virtual juce::Component* getComponent() = 0;
     virtual int getPreferredHeight() = 0;
     virtual int getPreferredWidth() = 0;
 
-    juce::ValueTree getState() const;
-    void setState (const juce::ValueTree& st);
-    juce::UndoManager* getUndoManager() const;
-
     const juce::Identifier& propertie;
     juce::Label label;
 
-protected:
-    juce::ValueTree state;
-    juce::UndoManager& undoManager;
-
 private:
-    // BaseComp (const BaseComp&) = delete;
-    // BaseComp& operator= (const BaseComp&) = delete;
-    // JUCE_LEAK_DETECTOR (BaseComp)
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BaseComp)
 };
 
@@ -38,9 +27,8 @@ private:
 class SliderComp : public BaseComp
 {
 public:
-    SliderComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& propertie,
+    SliderComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& propertie,
                 const juce::String& labelText, juce::Range<double> range, double skew, const juce::String& suffix = {});
-    ~SliderComp();
 
     juce::Component* getComponent() override;
     int getPreferredHeight() override;
@@ -50,21 +38,15 @@ public:
 private:
     juce::Slider slider;
 
-    // SliderComp (const SliderComp&) = delete;
-    // SliderComp& operator= (const SliderComp&) = delete;
-    // JUCE_LEAK_DETECTOR (SliderComp)
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SliderComp)
 };
 
 //==============================================================================
-class ChoiceComp : public BaseComp
+class ComboComp : public BaseComp
 {
 public:
-    ChoiceComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& propertie,
-                const juce::String& labelText, const juce::StringArray& options);
-
-    ~ChoiceComp();
+    ComboComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& propertie,
+               const juce::String& labelText, const juce::StringArray& options);
 
     juce::Component* getComponent() override;
     int getPreferredHeight() override;
@@ -72,11 +54,26 @@ public:
     int getCurrentValue() const;
 
 private:
-    juce::ComboBox parameterBox;
+    juce::ComboBox comboBox;
 
-    // ChoiceComp (const ChoiceComp&) = delete;
-    // ChoiceComp& operator= (const ChoiceComp&) = delete;
-    // JUCE_LEAK_DETECTOR (ChoiceComp)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ComboComp)
+};
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceComp)
+//==============================================================================
+class PopupComp : public BaseComp
+{
+public:
+    PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop, const juce::String& labelText,
+               const juce::StringArray& options, const std::vector<MenuItems>& sub_options);
+
+    juce::Component* getComponent() override;
+    int getPreferredHeight() override;
+    int getPreferredWidth() override;
+    void updateMenu (std::vector<MenuItems>& sub_options);
+
+private:
+    juce::ComboBox menu;
+    juce::OwnedArray<juce::PopupMenu> sub_menus;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PopupComp)
 };

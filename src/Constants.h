@@ -21,7 +21,7 @@ enum WaveType
 
 inline constexpr struct _Default_Parameters
 {
-    float master_gain = 0.7; // linear
+    float master_gain = 0.5; // linear
     float chan_gain = 0;     // dB
 
     WaveType osc_wavetype = WaveType::SIN;
@@ -74,6 +74,7 @@ inline constexpr struct _Gui_Sizes
 
     int comp_title_font = 15;
     int selector_box_width = 50;
+    int route_box_width = 100;
 
 } gui_sizes;
 
@@ -100,6 +101,7 @@ DECLARE_ID (OSC3)
 DECLARE_ID (OSC4)
 
 DECLARE_ID (LFO_GUI)
+DECLARE_ID (route)
 DECLARE_ID (LFO)
 DECLARE_ID (LFO1)
 DECLARE_ID (LFO2)

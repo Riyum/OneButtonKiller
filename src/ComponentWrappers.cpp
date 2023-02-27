@@ -1,34 +1,16 @@
 #include "ComponentWrappers.h"
+#include "Constants.h"
 
-BaseComp::BaseComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& prop,
-                    const juce::String& labelText)
-    : propertie (prop), label ("", labelText), state (v), undoManager (um)
-
+BaseComp::BaseComp (const juce::Identifier& prop, const juce::String& labelText)
+    : propertie (prop), label ("", labelText)
 {
-}
-
-juce::ValueTree BaseComp::getState() const
-{
-    return state;
-}
-
-void BaseComp::setState (const juce::ValueTree& st)
-{
-    state = st;
-}
-
-juce::UndoManager* BaseComp::getUndoManager() const
-{
-    return &undoManager;
 }
 
 //==============================================================================
-SliderComp::SliderComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& prop,
-                        const juce::String& labelText, juce::Range<double> range, double skew,
-                        const juce::String& suffix)
-    : BaseComp (v, um, prop, labelText)
+SliderComp::SliderComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop,
+                        const juce::String& labelText, juce::Range<double> range, double skew, const juce::String& suffix)
+    : BaseComp (prop, labelText)
 {
-    // std::cout << "Creating SliderComp\n";
     slider.setRange (range.getStart(), range.getEnd(), 0.001);
     slider.setSliderStyle (juce::Slider::SliderStyle::Rotary);
     slider.setTextBoxStyle (juce::Slider::TextEntryBoxPosition::TextBoxBelow, true, 60, 20);
@@ -40,13 +22,8 @@ SliderComp::SliderComp (const juce::ValueTree& v, juce::UndoManager& um, const j
     label.attachToComponent (&slider, false);
     label.setJustificationType (juce::Justification::centredBottom);
 
-    slider.getValueObject().referTo (getState().getPropertyAsValue (prop, getUndoManager()));
+    slider.getValueObject().referTo (v.getPropertyAsValue (prop, um));
     // slider.setValue (v[prop]);
-}
-
-SliderComp::~SliderComp()
-{
-    // std::cout << "Destroying SliderComp\n";
 }
 
 juce::Component* SliderComp::getComponent()
@@ -70,39 +47,84 @@ double SliderComp::getCurrentValue() const
 }
 
 //==============================================================================
-ChoiceComp::ChoiceComp (const juce::ValueTree& v, juce::UndoManager& um, const juce::Identifier& prop,
-                        const juce::String& labelText, const juce::StringArray& options)
-    : BaseComp (v, um, prop, labelText)
+ComboComp::ComboComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop,
+                      const juce::String& labelText, const juce::StringArray& options)
+    : BaseComp (prop, labelText)
 {
-    parameterBox.addItemList (options, 1);
+    comboBox.addItemList (options, 1);
 
-    parameterBox.getSelectedIdAsValue().referTo (getState().getPropertyAsValue (prop, getUndoManager()));
-    // parameterBox.setSelectedId (v[prop], juce::NotificationType::dontSendNotification);
-    // std::cout << "Creating ChoiceComp\n";
+    comboBox.getSelectedIdAsValue().referTo (v.getPropertyAsValue (prop, um));
+    // comboBox.setSelectedId (v[prop], juce::NotificationType::dontSendNotification);
 }
 
-ChoiceComp::~ChoiceComp()
+juce::Component* ComboComp::getComponent()
 {
-
-    // std::cout << "Destroying ChoiceComp\n";
+    return &comboBox;
 }
 
-juce::Component* ChoiceComp::getComponent()
-{
-    return &parameterBox;
-}
-
-int ChoiceComp::getPreferredHeight()
+int ComboComp::getPreferredHeight()
 {
     return 25;
 }
 
-int ChoiceComp::getPreferredWidth()
+int ComboComp::getPreferredWidth()
 {
     return 80;
 }
 
-int ChoiceComp::getCurrentValue() const
+int ComboComp::getCurrentValue() const
 {
-    return parameterBox.getSelectedId();
+    return comboBox.getSelectedId();
+}
+
+//==============================================================================
+PopupComp::PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop,
+                      const juce::String& labelText, const juce::StringArray& options,
+                      const std::vector<MenuItems>& subOptions)
+    : BaseComp (prop, labelText)
+{
+    for (size_t i = 0; i < static_cast<size_t> (options.size()); ++i)
+    {
+        sub_menus.add (new juce::PopupMenu());
+        for (size_t j = 0; j < subOptions[i].size(); ++j)
+            sub_menus[i]->addItem (subOptions[i][j]);
+
+        menu.getRootMenu()->addSubMenu (options[i], *sub_menus[i]);
+    }
+    menu.getSelectedIdAsValue().referTo (v.getPropertyAsValue (prop, um));
+}
+
+juce::Component* PopupComp::getComponent()
+{
+    return &menu;
+}
+
+int PopupComp::getPreferredHeight()
+{
+    return 25;
+}
+
+int PopupComp::getPreferredWidth()
+{
+    return 80;
+}
+
+void PopupComp::updateMenu (std::vector<MenuItems>& sub_options)
+{
+    juce::PopupMenu::MenuItemIterator opt (*menu.getRootMenu());
+
+    for (size_t i = 0; opt.next() != false; ++i)
+    {
+        auto sub_opt = juce::PopupMenu::MenuItemIterator (*opt.getItem().subMenu.get());
+
+        for (size_t j = 0; sub_opt.next() != false; ++j)
+            sub_opt.getItem().setAction (sub_options[i][j].action);
+    }
+
+    // for (size_t i = 0; i < static_cast<size_t> (sub_menus.size()); ++i)
+    // {
+    //     juce::PopupMenu::MenuItemIterator sub_opt (*sub_menus[i]);
+    //     for (size_t j = 0; sub_opt.next() != false; ++j)
+    //         sub_opt.getItem().setAction (sub_options[i][j].action);
+    // }
 }
