@@ -15,7 +15,6 @@
 #include <vector>
 
 // TODO: add reset to defaults button
-// TODO: add panic button
 
 class MainComponent : public juce::AudioAppComponent,
                       public juce::ChangeListener, // listening to the state envtes

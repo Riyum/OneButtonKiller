@@ -5,10 +5,15 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     : state (st), selectors_state (selectors_st)
 // adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
+    std::vector<std::reference_wrapper<const juce::Identifier>> props = {IDs::freq, IDs::gain, IDs::fm_freq, IDs::fm_depth};
+    std::vector<double> limits = {param_limits.osc_freq_max, param_limits.osc_gain_min, param_limits.osc_fm_freq_max,
+                                  param_limits.osc_fm_depth_max};
+
     for (size_t i = 0; i < chains.size(); i++)
     {
         chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
         lfo[i] = std::make_unique<Lfo<float>> (chains[i], i, st);
+        lfo[i]->setCompWithProp (IDs::OSC, props[i], limits[i]);
     }
 
     // Some platforms require permissions to open input channels so request that here
@@ -110,6 +115,11 @@ void MainComponent::releaseResources()
     // restarted due to a setting change.
 
     // For more details, see the help for AudioProcessor::releaseResources()
+    for (auto& chain : chains)
+    {
+        chain.first->reset();
+        chain.second->reset();
+    }
 }
 
 bool MainComponent::keyPressed (const juce::KeyPress& key, juce::Component* originatingComponent)
@@ -193,6 +203,7 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
     funcs.push_back ([this] { generateRandomParameters(); });
     funcs.push_back ([this] { undoManager.undo(); });
     funcs.push_back ([this] { undoManager.redo(); });
+    funcs.push_back ([this] { releaseResources(); });
 
     btn_comp = std::make_unique<ButtonsGui> (funcs);
     addAndMakeVisible (btn_comp.get());
@@ -497,21 +508,21 @@ void MainComponent::generateRandomParameters()
     std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
     std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
 
-    std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 3);
+    std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 4);
     std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
     std::uniform_real_distribution<> lfo_gain (param_limits.lfo_gain_min, param_limits.lfo_gain_max);
     std::uniform_real_distribution<> lfo_route (1, 4);
 
     std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
     std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
-    std::uniform_real_distribution<> del_feedback (param_limits.delay_feedback_min, param_limits.delay_feedback_max);
+    std::uniform_real_distribution<> del_feedback (param_limits.delay_feedback_min, param_limits.delay_feedback_max - 0.1);
 
     std::uniform_real_distribution<> per_50 (0, 50);
     std::uniform_real_distribution<> per_33 (0, 33);
     std::uniform_real_distribution<> per_25 (0, 25);
     std::uniform_real_distribution<> per_10 (0, 10);
     std::uniform_real_distribution<> per_5 (0, 5);
-    std::uniform_real_distribution<> per_1 (0, 5);
+    std::uniform_real_distribution<> per_1 (0, 1);
 
     // unique indexes
     std::array<int, NUM_OUTPUT_CHANNELS / 2> indexs_range;
@@ -523,30 +534,34 @@ void MainComponent::generateRandomParameters()
     const auto& osc_states = state.getChildWithName (IDs::OSC);
     const auto& lfo_states = state.getChildWithName (IDs::LFO);
     const auto& del_states = state.getChildWithName (IDs::DELAY);
+    // releaseResources();
 
     for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
     {
         osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), &undoManager);
-        osc_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.osc_freq_max, per_10 (gen)),
-                                             &undoManager);
-        // osc_states.getChild (i).setProperty (IDs::fm_freq, osc_fm_freq (gen), &undoManager);
-        osc_states.getChild (i).setProperty (IDs::fm_freq, percentageFrom (param_limits.osc_fm_freq_max, per_50 (gen)),
-                                             &undoManager);
-        // osc_states.getChild (i).setProperty (IDs::fm_depth, osc_fm_depth (gen), &undoManager);
-        osc_states.getChild (i).setProperty (IDs::fm_depth,
-                                             percentageFrom (param_limits.osc_fm_depth_max, per_25 (gen)), &undoManager);
-
         lfo_states.getChild (i).setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
         if (std::find (indexes.begin(), indexes.end(), i) != indexes.end())
         {
-            lfo_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.lfo_freq_max, per_5 (gen)),
+            osc_states.getChild (i).setProperty (IDs::freq, 0, &undoManager);
+            osc_states.getChild (i).setProperty (
+                IDs::fm_freq, percentageFrom (param_limits.osc_fm_freq_max, per_50 (gen)), &undoManager);
+            osc_states.getChild (i).setProperty (
+                IDs::fm_depth, percentageFrom (param_limits.osc_fm_depth_max, per_5 (gen)), &undoManager);
+
+            lfo_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.lfo_freq_max, per_1 (gen)),
                                                  &undoManager);
             lfo_states.getChild (i).setProperty (IDs::gain, percentageFrom (param_limits.lfo_gain_max, per_50 (gen)),
                                                  &undoManager);
         }
-        // lfo_states.getChild (i).setProperty (IDs::route, lfo_route (gen), &undoManager);
         else
         {
+            // osc_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.osc_freq_max, per_25 (gen)),
+            //                                      &undoManager);
+            osc_states.getChild (i).setProperty (IDs::freq, osc_freq (gen), &undoManager);
+            osc_states.getChild (i).setProperty (IDs::fm_freq, osc_fm_freq (gen), &undoManager);
+            osc_states.getChild (i).setProperty (
+                IDs::fm_depth, percentageFrom (param_limits.osc_fm_depth_max, per_25 (gen)), &undoManager);
+
             lfo_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.lfo_freq_max, per_50 (gen)),
                                                  &undoManager);
             lfo_states.getChild (i).setProperty (IDs::gain, percentageFrom (param_limits.lfo_gain_max, per_5 (gen)),

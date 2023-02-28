@@ -5,6 +5,7 @@
 #include "Osc.h"
 #include <JuceHeader.h>
 #include <functional>
+#include <random>
 
 template <typename Type>
 class Lfo

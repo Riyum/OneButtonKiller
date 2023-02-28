@@ -14,6 +14,7 @@ enum WaveType
     SIN = 1,
     SAW,
     SQR,
+    RAND,
     WSIN,
     WSAW,
     WSQR
@@ -51,14 +52,14 @@ inline constexpr struct _Parameter_Limits
     double master_min = 0, master_max = 1;
     double chan_min = -100.0, chan_max = 0;
 
-    int osc_waveType_min = 1, osc_waveType_max = 6;
+    int osc_waveType_min = 1, osc_waveType_max = 7;
     double osc_freq_min = 0, osc_freq_max = 24000;
     double osc_gain_min = -100, osc_gain_max = 0;
     double osc_fm_freq_min = 0, osc_fm_freq_max = 150;
     double osc_fm_depth_min = 0, osc_fm_depth_max = 1;
 
-    int lfo_waveType_min = 1, lfo_waveType_max = 6;
-    double lfo_freq_min = 0, lfo_freq_max = 40;
+    int lfo_waveType_min = 1, lfo_waveType_max = 4;
+    double lfo_freq_min = 0, lfo_freq_max = 30;
     double lfo_gain_min = 0, lfo_gain_max = 1;
 
     double delay_mix_min = 0, delay_mix_max = 1;

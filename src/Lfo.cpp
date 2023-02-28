@@ -11,6 +11,7 @@ Lfo<Type>::Lfo (StereoChain& _chain, const size_t _id, const juce::ValueTree& _s
 template <typename Type>
 void Lfo<Type>::setWaveType (const WaveType choice)
 {
+
     switch (choice)
     {
     case WaveType::SIN:
@@ -25,16 +26,16 @@ void Lfo<Type>::setWaveType (const WaveType choice)
         lfo.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; });
         return;
 
-    case WaveType::WSIN:
-        lfo.initialise ([] (Type x) { return std::sin (x); }, 100);
-        return;
-
-    case WaveType::WSAW:
-        lfo.initialise ([] (Type x) { return x / juce::MathConstants<Type>::pi; }, 100);
-        return;
-
-    case WaveType::WSQR:
-        lfo.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; }, 200);
+    case WaveType::RAND:
+        lfo.initialise (
+            [] (Type x)
+            {
+                static std::random_device rd;
+                static std::mt19937 gen (rd());
+                static std::uniform_real_distribution<Type> dist (-1.0f, 1.0f);
+                return dist (gen);
+            },
+            256);
         return;
 
     default:
@@ -116,8 +117,11 @@ void Lfo<Type>::setCompWithProp (const juce::Identifier& comp_type, const juce::
     setProp (_prop, max);
 }
 
-// template <typename Type>
-//     void Lfo<Type>::reset() noexcept;
+template <typename Type>
+void Lfo<Type>::reset() noexcept
+{
+    lfo.reset();
+}
 
 template <typename Type>
 void Lfo<Type>::process()

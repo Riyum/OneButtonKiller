@@ -23,7 +23,8 @@ public:
 private:
     int btn_gap = 5;
     int btn_width = 50, btn_height = 20;
-    static constexpr int NUM_OF_COMPONENTS = 3;
+    int panic_btn_width = 20;
+    static constexpr int NUM_OF_COMPONENTS = 4;
     std::array<std::unique_ptr<juce::TextButton>, NUM_OF_COMPONENTS> comps;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ButtonsGui)

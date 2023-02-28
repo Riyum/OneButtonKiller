@@ -9,35 +9,50 @@ template <typename Type>
 void Osc<Type>::setWaveType (const WaveType choice)
 {
     auto& osc = pc.template get<ProcIdx::OSC>();
+    // Type dutyCycle = 0.25;
 
     switch (choice)
     {
     case WaveType::SIN:
-        osc.initialise ([] (float x) { return std::sin (x); });
+        osc.initialise ([] (Type x) { return std::sin (x); });
         return;
 
     case WaveType::SAW:
-        osc.initialise ([] (float x) { return x / juce::MathConstants<float>::pi; });
+        osc.initialise ([] (Type x) { return x / juce::MathConstants<Type>::pi; });
         return;
 
     case WaveType::SQR:
-        osc.initialise ([] (float x) { return x < 0.0f ? -1.0f : 1.0f; });
+        osc.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; });
+        // osc.initialise ([dutyCycle] (Type x)
+        //                 { return (x < (dutyCycle * juce::MathConstants<Type>::twoPi)) ? 1.0f : -1.0f; });
+        return;
+
+    case WaveType::RAND:
+        osc.initialise (
+            [] (Type x)
+            {
+                static std::random_device rd;
+                static std::mt19937 gen (rd());
+                static std::uniform_real_distribution<Type> dist (-1.0f, 1.0f);
+                return dist (gen);
+            },
+            256);
         return;
 
     case WaveType::WSIN:
-        osc.initialise ([] (float x) { return std::sin (x); }, 100);
+        osc.initialise ([] (Type x) { return std::sin (x); }, 100);
         return;
 
     case WaveType::WSAW:
-        osc.initialise ([] (float x) { return x / juce::MathConstants<float>::pi; }, 100);
+        osc.initialise ([] (Type x) { return x / juce::MathConstants<Type>::pi; }, 100);
         return;
 
     case WaveType::WSQR:
-        osc.initialise ([] (float x) { return x < 0.0f ? -1.0f : 1.0f; }, 200);
+        osc.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; }, 200);
         return;
 
     default:
-        osc.initialise ([] (float x) { return std::sin (x); });
+        osc.initialise ([] (Type x) { return std::sin (x); });
         return;
     }
 }
@@ -118,7 +133,7 @@ Type Osc<Type>::processSample (const Type input)
 template <typename Type>
 void Osc<Type>::reset() noexcept
 {
-    return;
+    pc.reset();
 }
 
 template <typename Type>

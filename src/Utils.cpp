@@ -65,11 +65,12 @@ juce::ValueTree createDefaultTree()
                              {IDs::fm_freq, def_params.osc_fm_freq},
                              {IDs::fm_depth, def_params.osc_fm_depth}}};
 
+
         juce::ValueTree lfo{IDs::Group::LFO[i],
                             {{IDs::wavetype, def_params.lfo_wavetype},
                              {IDs::freq, def_params.lfo_freq},
                              {IDs::gain, def_params.lfo_gain},
-                             {IDs::route, 1}}};
+                             {IDs::route, (int)i + 1}}};
 
         juce::ValueTree del{IDs::Group::DELAY[i],
                             {{IDs::mix, def_params.del_mix},

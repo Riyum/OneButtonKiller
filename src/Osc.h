@@ -3,6 +3,7 @@
 #include "Constants.h"
 #include <JuceHeader.h>
 #include <atomic>
+#include <random>
 
 template <typename Type>
 class Osc

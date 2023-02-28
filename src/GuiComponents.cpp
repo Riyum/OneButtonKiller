@@ -14,7 +14,7 @@ void setComponentGraphics (juce::Graphics& g, const juce::Rectangle<int>& bounds
 ButtonsGui::ButtonsGui (const std::vector<std::function<void()>>& funcs)
 {
 
-    juce::StringArray str{"Magic", "Undo", "Redo"};
+    juce::StringArray str{"Magic", "Undo", "Redo", "!"};
 
     for (unsigned i = 0; i < comps.size(); ++i)
     {
@@ -35,6 +35,12 @@ void ButtonsGui::resized()
 
     for (auto&& c : comps)
     {
+        if (c->getButtonText() == "!")
+        {
+            c->setSize (panic_btn_width, btn_height);
+            c->setTopLeftPosition (bounds.removeFromLeft (panic_btn_width + btn_gap).getTopLeft());
+            continue;
+        }
         c->setSize (btn_width, btn_height);
         c->setTopLeftPosition (bounds.removeFromLeft (btn_width + btn_gap).getTopLeft());
     }
@@ -42,7 +48,7 @@ void ButtonsGui::resized()
 
 int ButtonsGui::getWidthNeeded()
 {
-    return (btn_width + btn_gap) * NUM_OF_COMPONENTS;
+    return (btn_width + btn_gap) * 3 + panic_btn_width;
 }
 
 int ButtonsGui::getHeightNeeded()
@@ -105,8 +111,8 @@ OscGui::OscGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
 
     comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
-    comps[i++] = std::make_unique<ComboComp> (v, um, IDs::wavetype, "",
-                                              juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
+    comps[i++] = std::make_unique<ComboComp> (
+        v, um, IDs::wavetype, "", juce::StringArray{"sine", "saw", "square", "rand", "wsine", "wsaw", "wsqr"});
 
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{param_limits.osc_freq_min, param_limits.osc_freq_max}, 0.4, "Hz");
@@ -203,8 +209,8 @@ LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, 
 
     comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
-    comps[i++] = std::make_unique<ComboComp> (v, um, IDs::wavetype, "",
-                                              juce::StringArray{"sine", "saw", "square", "wsine", "wsaw", "wsqr"});
+    comps[i++] =
+        std::make_unique<ComboComp> (v, um, IDs::wavetype, "", juce::StringArray{"sine", "saw", "square", "rand"});
 
     comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", comp_des, route_options);
 
