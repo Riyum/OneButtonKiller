@@ -11,7 +11,7 @@ OneButtonKiller is an audio instrument, currently with the following components:
 | 4          | LFO         |
 | 4          | Delay       |
 
-My aim is to develop a program that can generate intricate sound patterns by simply clicking a single button  
+My aim is to develop a program that can generate intricate sound patterns by simply clicking a single button.  
 To attain this objective, I plan to include additional component types, increase their quantity, introduce signal routing
 capabilities and other various techniques.
 
@@ -25,7 +25,7 @@ The user is presented with a simple GUI interface with the following controls:
 - LFO: wave type, frequency, depth, routing options
 - Delay: wet / dry mix, time, feedback
 
-My current develop environment is Linux, but the instrument should be cross-platform thanks to JUCE  
+My current develop environment is Linux, the instrument should be cross-platform thanks to JUCE  
 it is intended to be a standalone application, so there is no VST version.
 
 This project is for learning purposes only.
