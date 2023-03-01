@@ -201,9 +201,8 @@ int OscGui::getHeightNeeded()
 }
 
 //==============================================================================
-LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const juce::StringArray& comp_des,
-                std::vector<MenuItems> _route_options, const std::function<void (std::vector<MenuItems>&, const int)> func)
-    : route_options (_route_options), updateLfoRouteOptions (func)
+LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const PopMenuOptions& options)
+
 {
     unsigned i = 0;
 
@@ -212,7 +211,7 @@ LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, 
     comps[i++] =
         std::make_unique<ComboComp> (v, um, IDs::wavetype, "", juce::StringArray{"sine", "saw", "square", "rand"});
 
-    comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", comp_des, route_options);
+    comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", options);
 
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{param_limits.lfo_freq_min, param_limits.lfo_freq_max}, 0.6, "Hz");
@@ -290,15 +289,7 @@ void LfoGui::setSelector (juce::ValueTree v, juce::UndoManager* um)
             slider->getValueObject().referTo (v.getPropertyAsValue (c->propertie, um));
 
         else if (auto comboBox = dynamic_cast<juce::ComboBox*> (c->getComponent()))
-        {
-            if (c->propertie == IDs::route)
-            {
-                auto menu = dynamic_cast<PopupComp*> (c.get());
-                updateLfoRouteOptions (route_options, v.getParent().indexOf (v));
-                menu->updateMenu (route_options);
-            }
             comboBox->getSelectedIdAsValue().referTo (v.getPropertyAsValue (c->propertie, um));
-        }
     }
 }
 

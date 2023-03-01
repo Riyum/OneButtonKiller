@@ -67,14 +67,11 @@ private:
 
     void initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs);
     void initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs);
-    std::vector<MenuItems> initLfoRouteOptions (const int lfo_idx);
-    void updateLfoRouteOptions (std::vector<MenuItems>& lro, const int lfo_idx);
+    void setLfoRoute (const int lfo_idx, const int val);
 
     juce::var getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
                                   const juce::Identifier& node, const juce::Identifier& propertie);
 
-    template <typename T, typename Func, typename... O>
-    void setChainParams (T val, Func f, O*... obj);
     template <typename T>
     void setChainParams (StereoChain* chain, const juce::Identifier& comp_type, const juce::Identifier& propertie, T val);
 

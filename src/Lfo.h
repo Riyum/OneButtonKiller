@@ -23,7 +23,7 @@ public:
 
     void setComp (const juce::Identifier& comp_type);
     void setProp (const juce::Identifier& _prop, Type max);
-    void setCompWithProp (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max);
+    void setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max);
 
     void reset() noexcept;
     void process();

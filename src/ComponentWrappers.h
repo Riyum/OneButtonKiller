@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 
-using MenuItems = std::vector<juce::PopupMenu::Item>;
+using PopMenuOptions = std::map<juce::String, std::vector<std::pair<int, juce::String>>>;
 
 // It doesn't matter which, but BaseComp need to derive from some juce class
 // it seems that without the inheritance, instances of the derived classes from BaseComp
@@ -64,12 +64,11 @@ class PopupComp : public BaseComp
 {
 public:
     PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop, const juce::String& labelText,
-               const juce::StringArray& options, const std::vector<MenuItems>& sub_options);
+               const PopMenuOptions& options);
 
     juce::Component* getComponent() override;
     int getPreferredHeight() override;
     int getPreferredWidth() override;
-    void updateMenu (std::vector<MenuItems>& sub_options);
 
 private:
     juce::ComboBox menu;

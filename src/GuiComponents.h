@@ -69,8 +69,7 @@ private:
 class LfoGui : public juce::Component
 {
 public:
-    LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const juce::StringArray& comp_des,
-            std::vector<MenuItems> _route_options, const std::function<void (std::vector<MenuItems>&, const int)> func);
+    LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const PopMenuOptions& options);
     void paint (juce::Graphics& g) override;
     void resized() override;
     void setSelector (juce::ValueTree v, juce::UndoManager* um);
@@ -80,8 +79,6 @@ public:
 private:
     static constexpr int NUM_OF_COMPONENTS = 5;
     std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
-    std::vector<MenuItems> route_options;
-    const std::function<void (std::vector<MenuItems>&, const int)> updateLfoRouteOptions;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LfoGui)
 };

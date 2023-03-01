@@ -13,7 +13,7 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     {
         chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
         lfo[i] = std::make_unique<Lfo<float>> (chains[i], i, st);
-        lfo[i]->setCompWithProp (IDs::OSC, props[i], limits[i]);
+        lfo[i]->setLfoRoute (IDs::OSC, props[i], limits[i]);
     }
 
     // Some platforms require permissions to open input channels so request that here
@@ -199,21 +199,25 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs)
 {
 
-    std::vector<std::function<void()>> funcs;
-    funcs.push_back ([this] { generateRandomParameters(); });
-    funcs.push_back ([this] { undoManager.undo(); });
-    funcs.push_back ([this] { undoManager.redo(); });
-    funcs.push_back ([this] { releaseResources(); });
+    // clang-format off
+    std::vector<std::function<void()>> btn_funcs { [this] { generateRandomParameters(); },
+                                                   [this] { undoManager.undo(); },
+                                                   [this] { undoManager.redo(); },
+                                                   [this] { releaseResources(); }
+    };
 
-    btn_comp = std::make_unique<ButtonsGui> (funcs);
+    int itemId = 1;
+    PopMenuOptions routing_options {
+        {"Osc", {{itemId++, "Freq"}, {itemId++, "Gain"}, {itemId++, "FM Freq"}, {itemId++, "FM Depth"}}}
+    };
+    // clang-format on
+
+    btn_comp = std::make_unique<ButtonsGui> (btn_funcs);
     addAndMakeVisible (btn_comp.get());
 
     auto output_state = v.getChildWithName (IDs::OUTPUT_GAIN);
     output_comp = std::make_unique<OutputGui> (output_state, &undoManager);
     addAndMakeVisible (output_comp.get());
-
-    juce::StringArray comp_des{"Osc"};
-    auto func = std::bind (&MainComponent::updateLfoRouteOptions, this, std::placeholders::_1, std::placeholders::_2);
 
     for (size_t i = 0; i < osc_comp.size(); i++)
     {
@@ -227,8 +231,7 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
         auto lfo_state = v.getChildWithName (IDs::LFO).getChildWithName (IDs::Group::LFO[i]);
         auto lfo_selector_state = vs.getChildWithName (IDs::LFO_GUI).getChildWithName (IDs::Group::LFO[i]);
 
-        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, &undoManager, comp_des,
-                                                initLfoRouteOptions (i), func);
+        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, &undoManager, routing_options);
         if (lfo_comp[i].get() != nullptr)
             addAndMakeVisible (lfo_comp[i].get());
 
@@ -241,50 +244,22 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
     }
 }
 
-std::vector<MenuItems> MainComponent::initLfoRouteOptions (const int lfo_idx)
-{
-    std::vector<std::reference_wrapper<const juce::Identifier>> props = {IDs::freq, IDs::gain, IDs::fm_freq, IDs::fm_depth};
-
-    std::vector<double> limits = {param_limits.osc_freq_max, param_limits.osc_gain_min, param_limits.osc_fm_freq_max,
-                                  param_limits.osc_fm_depth_max};
-
-    juce::StringArray opt = {"Freq", "Gain", "FM Freq", "FM Depth"};
-
-    std::vector<MenuItems> lro;
-    MenuItems items;
-    int id = 1;
-    size_t idx = static_cast<size_t> (lfo_idx);
-    auto item = juce::PopupMenu::Item();
-
-    for (size_t i = 0; i < props.size(); ++i)
-    {
-        item = juce::PopupMenu::Item (opt[i]);
-        item.setID (id++);
-        item.setAction ([this, idx, props, limits, i]() { lfo[idx]->setCompWithProp (IDs::OSC, props[i], limits[i]); });
-        items.push_back (item);
-    }
-
-    lro.push_back (items);
-
-    return lro;
-}
-
-void MainComponent::updateLfoRouteOptions (std::vector<MenuItems>& lro, const int lfo_idx)
+void MainComponent::setLfoRoute (const int lfo_idx, const int val)
 {
     size_t idx = static_cast<size_t> (lfo_idx);
 
-    std::vector<std::function<void()>> actions = {
-        [this, idx]() { lfo[idx]->setCompWithProp (IDs::OSC, IDs::freq, param_limits.osc_freq_max); },
-        [this, idx]() { lfo[idx]->setCompWithProp (IDs::OSC, IDs::gain, param_limits.osc_gain_min); },
-        [this, idx]() { lfo[idx]->setCompWithProp (IDs::OSC, IDs::fm_freq, param_limits.osc_fm_freq_max); },
-        [this, idx]() { lfo[idx]->setCompWithProp (IDs::OSC, IDs::fm_depth, param_limits.osc_fm_depth_max); }};
+    static std::vector<std::reference_wrapper<const juce::Identifier>> prop = {IDs::freq, IDs::gain, IDs::fm_freq,
+                                                                               IDs::fm_depth};
 
-    size_t k = 0;
-    for (size_t i = 0; i < lro.size(); ++i)
-    {
-        for (size_t j = 0; j < lro[i].size(); ++j)
-            lro[i][j].setAction (actions[k++]);
-    }
+    static std::vector<double> limit = {param_limits.osc_freq_max, param_limits.osc_gain_min,
+                                        param_limits.osc_fm_freq_max, param_limits.osc_fm_depth_max};
+
+    size_t itemId = static_cast<size_t> (val) - 1;
+    juce::Identifier comp = IDs::OSC;
+    if (itemId >= 0 && itemId <= 3)
+        comp = IDs::OSC;
+
+    lfo[idx]->setLfoRoute (comp, prop[itemId], limit[itemId]);
 }
 
 void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs)
@@ -307,7 +282,7 @@ void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::Valu
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::wavetype));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::freq));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::gain));
-        // broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::route));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::route));
 
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::mix));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::time));
@@ -347,12 +322,6 @@ juce::var MainComponent::getStateParamValue (const juce::ValueTree& v, const juc
                                              const juce::Identifier& node, const juce::Identifier& propertie)
 {
     return v.getChildWithName (parent).getChildWithName (node).getProperty (propertie);
-}
-
-template <typename T, typename Func, typename... O>
-void MainComponent::setChainParams (T val, Func f, O*... obj)
-{
-    (..., (obj->*f) (val));
 }
 
 template <typename T>
@@ -428,6 +397,8 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
         if (propertie == IDs::route)
         {
+            setLfoRoute (idx, val);
+            // updateLfoRouteOptions(idx, static_cast<int>(val));
         }
 
         if (propertie == IDs::wavetype)
@@ -483,7 +454,7 @@ void MainComponent::setDefaultParameterValues()
         setChainParams (&chains[i], IDs::OUTPUT_GAIN, IDs::gain, def_params.chan_gain);
         // OSC
         setChainParams (&chains[i], IDs::OSC, IDs::wavetype, def_params.osc_wavetype);
-        setChainParams (&chains[i], IDs::OSC, IDs::freq, def_params.osc_freq);
+        setChainParams (&chains[i], IDs::OSC, IDs::freq, def_params.osc_freq + 10 * i);
         setChainParams (&chains[i], IDs::OSC, IDs::gain, def_params.osc_gain);
         setChainParams (&chains[i], IDs::OSC, IDs::fm_freq, def_params.osc_fm_freq);
         setChainParams (&chains[i], IDs::OSC, IDs::fm_depth, def_params.osc_fm_depth);
@@ -500,29 +471,30 @@ void MainComponent::setDefaultParameterValues()
 
 void MainComponent::generateRandomParameters()
 {
-    std::random_device rd;
-    std::mt19937 gen (rd());
+    static std::random_device rd;
+    static std::mt19937 gen (rd());
 
-    std::uniform_int_distribution<> osc_type (param_limits.osc_waveType_min, 3);
-    std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.osc_freq_max);
-    std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
-    std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
+    static std::uniform_int_distribution<> osc_type (param_limits.osc_waveType_min, 3);
+    static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.osc_freq_max);
+    static std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
+    static std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
 
-    std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 4);
-    std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
-    std::uniform_real_distribution<> lfo_gain (param_limits.lfo_gain_min, param_limits.lfo_gain_max);
-    std::uniform_real_distribution<> lfo_route (1, 4);
+    static std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 4);
+    static std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
+    static std::uniform_real_distribution<> lfo_gain (param_limits.lfo_gain_min, param_limits.lfo_gain_max);
+    static std::uniform_real_distribution<> lfo_route (1, 4);
 
-    std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
-    std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
-    std::uniform_real_distribution<> del_feedback (param_limits.delay_feedback_min, param_limits.delay_feedback_max - 0.1);
+    static std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
+    static std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
+    static std::uniform_real_distribution<> del_feedback (param_limits.delay_feedback_min,
+                                                          param_limits.delay_feedback_max - 0.1);
 
-    std::uniform_real_distribution<> per_50 (0, 50);
-    std::uniform_real_distribution<> per_33 (0, 33);
-    std::uniform_real_distribution<> per_25 (0, 25);
-    std::uniform_real_distribution<> per_10 (0, 10);
-    std::uniform_real_distribution<> per_5 (0, 5);
-    std::uniform_real_distribution<> per_1 (0, 1);
+    static std::uniform_real_distribution<> per_50 (0, 50);
+    static std::uniform_real_distribution<> per_33 (0, 33);
+    static std::uniform_real_distribution<> per_25 (0, 25);
+    static std::uniform_real_distribution<> per_10 (0, 10);
+    static std::uniform_real_distribution<> per_5 (0, 5);
+    static std::uniform_real_distribution<> per_1 (0, 1);
 
     // unique indexes
     std::array<int, NUM_OUTPUT_CHANNELS / 2> indexs_range;
@@ -540,6 +512,7 @@ void MainComponent::generateRandomParameters()
     {
         osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), &undoManager);
         lfo_states.getChild (i).setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
+        lfo_states.getChild (i).setProperty (IDs::route, lfo_route (gen), &undoManager);
         if (std::find (indexes.begin(), indexes.end(), i) != indexes.end())
         {
             osc_states.getChild (i).setProperty (IDs::freq, 0, &undoManager);
@@ -619,7 +592,7 @@ void MainComponent::paint (juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    int xPadding = 5;
+    static int xPadding = 5;
     auto bounds = getLocalBounds();
 
     bounds.removeFromTop (gui_sizes.yGap_top);

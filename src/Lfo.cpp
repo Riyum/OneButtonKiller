@@ -5,7 +5,7 @@ template <typename Type>
 Lfo<Type>::Lfo (StereoChain& _chain, const size_t _id, const juce::ValueTree& _state)
     : chain (_chain), chain_id (_id), state (_state)
 {
-    setCompWithProp (IDs::OSC, IDs::freq, param_limits.osc_freq_max);
+    setLfoRoute (IDs::OSC, IDs::freq, param_limits.osc_freq_max);
 }
 
 template <typename Type>
@@ -111,7 +111,7 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type max)
 }
 
 template <typename Type>
-void Lfo<Type>::setCompWithProp (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max)
+void Lfo<Type>::setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max)
 {
     comp_state = state.getChildWithName (comp_type).getChild (chain_id);
     setProp (_prop, max);

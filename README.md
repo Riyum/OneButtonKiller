@@ -11,25 +11,27 @@ OneButtonKiller is an audio instrument, currently with the following components:
 | 4          | LFO         |
 | 4          | Delay       |
 
-The goal is to create a program that successfully generates a (random!) complex sound patterns with just one button.  
-to achieve this, I intend to add more component types, increase their quantity, add signal routing capabilities, and much more.
+My aim is to develop a program that can generate intricate sound patterns by simply clicking a single button  
+To attain this objective, I plan to include additional component types, increase their quantity, introduce signal routing
+capabilities and other various techniques.
 
 The user is presented with a simple GUI interface with the following controls:
 
 - The random parameters generator button (The killer button)
 - Undo / Redo buttons
-- Gain: master, channels
+- Output gain: master, channels
+- GUI selector: select the audio component that the GUI component will manage
 - Oscillator: wave type, gain, frequency, FM frequency, FM depth
-- LFO: wave type, frequency, depth
+- LFO: wave type, frequency, depth, routing options
 - Delay: wet / dry mix, time, feedback
 
-It is intended to be a standalone application, so there is no VST version.
+My current develop environment is Linux, but the instrument should be cross-platform thanks to JUCE  
+it is intended to be a standalone application, so there is no VST version.
 
 This project is for learning purposes only.
 
 ## Usage
 To emit a sound, press any key on keyboard.
-
 
 ## Build steps
 1. [Get](https://juce.com/get-juce/) and install the JUCE library.

@@ -79,17 +79,16 @@ int ComboComp::getCurrentValue() const
 
 //==============================================================================
 PopupComp::PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop,
-                      const juce::String& labelText, const juce::StringArray& options,
-                      const std::vector<MenuItems>& subOptions)
+                      const juce::String& labelText, const PopMenuOptions& options)
     : BaseComp (prop, labelText)
 {
-    for (size_t i = 0; i < static_cast<size_t> (options.size()); ++i)
+    for (auto const& [comp_description, comp_options] : options)
     {
         sub_menus.add (new juce::PopupMenu());
-        for (size_t j = 0; j < subOptions[i].size(); ++j)
-            sub_menus[i]->addItem (subOptions[i][j]);
+        for (auto& opt : comp_options)
+            sub_menus.getLast()->addItem (opt.first, opt.second);
 
-        menu.getRootMenu()->addSubMenu (options[i], *sub_menus[i]);
+        menu.getRootMenu()->addSubMenu (comp_description, *sub_menus.getLast());
     }
     menu.getSelectedIdAsValue().referTo (v.getPropertyAsValue (prop, um));
 }
@@ -107,24 +106,4 @@ int PopupComp::getPreferredHeight()
 int PopupComp::getPreferredWidth()
 {
     return 80;
-}
-
-void PopupComp::updateMenu (std::vector<MenuItems>& sub_options)
-{
-    juce::PopupMenu::MenuItemIterator opt (*menu.getRootMenu());
-
-    for (size_t i = 0; opt.next() != false; ++i)
-    {
-        auto sub_opt = juce::PopupMenu::MenuItemIterator (*opt.getItem().subMenu.get());
-
-        for (size_t j = 0; sub_opt.next() != false; ++j)
-            sub_opt.getItem().setAction (sub_options[i][j].action);
-    }
-
-    // for (size_t i = 0; i < static_cast<size_t> (sub_menus.size()); ++i)
-    // {
-    //     juce::PopupMenu::MenuItemIterator sub_opt (*sub_menus[i]);
-    //     for (size_t j = 0; sub_opt.next() != false; ++j)
-    //         sub_opt.getItem().setAction (sub_options[i][j].action);
-    // }
 }
