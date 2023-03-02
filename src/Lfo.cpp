@@ -73,6 +73,9 @@ Type Lfo<Type>::getGain() const
 template <typename Type>
 void Lfo<Type>::setComp (const juce::Identifier& comp_type)
 {
+    if (comp_state.isValid())
+        comp_state.sendPropertyChangeMessage (prop);
+
     comp_state = state.getChildWithName (comp_type).getChild (chain_id);
 }
 
@@ -81,6 +84,17 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type max)
 {
     prop = _prop;
     maxOut = max;
+
+    if (comp_state.getParent().getType() == IDs::OUTPUT_GAIN)
+    {
+        if (prop == IDs::gain)
+        {
+            left = std::bind (&juce::dsp::Gain<Type>::setGainDecibels, &chain.first->get<ProcIdx::CHAN_GAIN>(),
+                              std::placeholders::_1);
+            right = std::bind (&juce::dsp::Gain<Type>::setGainDecibels, &chain.second->get<ProcIdx::CHAN_GAIN>(),
+                               std::placeholders::_1);
+        }
+    }
 
     if (comp_state.getParent().getType() == IDs::OSC)
     {
@@ -108,12 +122,16 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type max)
             right = std::bind (&Osc<Type>::setFmDepth, &chain.second->get<ProcIdx::OSC>(), std::placeholders::_1);
         }
     }
+
+    if (comp_state.getParent().getType() == IDs::DELAY)
+    {
+    }
 }
 
 template <typename Type>
 void Lfo<Type>::setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max)
 {
-    comp_state = state.getChildWithName (comp_type).getChild (chain_id);
+    setComp (comp_type);
     setProp (_prop, max);
 }
 
@@ -135,6 +153,9 @@ void Lfo<Type>::process()
         mod = juce::jmap (lfo_val, -1.f, 1.f, -1 * cur, max);
     else
         mod = juce::jmap (lfo_val, -1.f, 1.f, 0.f, -1 * cur + maxOut);
+
+    if (getFrequency() == 0)
+        mod = 0;
 
     left (cur + mod * gain);
     right (cur + mod * gain);

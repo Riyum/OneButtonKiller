@@ -10,6 +10,7 @@
 #include <JuceHeader.h>
 #include <algorithm>
 #include <array>
+#include <map>
 #include <memory>
 #include <random>
 #include <vector>
@@ -67,7 +68,7 @@ private:
 
     void initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs);
     void initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs);
-    void setLfoRoute (const int lfo_idx, const int val);
+    void setLfoRoute (const size_t lfo_idx, const size_t val);
 
     juce::var getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
                                   const juce::Identifier& node, const juce::Identifier& propertie);

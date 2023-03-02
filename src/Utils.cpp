@@ -70,7 +70,7 @@ juce::ValueTree createDefaultTree()
                             {{IDs::wavetype, def_params.lfo_wavetype},
                              {IDs::freq, def_params.lfo_freq},
                              {IDs::gain, def_params.lfo_gain},
-                             {IDs::route, (int)i + 1}}};
+                             {IDs::route, (int)i + 2}}};
 
         juce::ValueTree del{IDs::Group::DELAY[i],
                             {{IDs::mix, def_params.del_mix},

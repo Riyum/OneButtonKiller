@@ -1,7 +1,9 @@
 #pragma once
-#include <JuceHeader.h>
 
-using PopMenuOptions = std::map<juce::String, std::vector<std::pair<int, juce::String>>>;
+#include <JuceHeader.h>
+#include <vector>
+
+using PopMenuOptions = std::vector<std::pair<juce::String, std::vector<std::pair<int, juce::String>>>>;
 
 // It doesn't matter which, but BaseComp need to derive from some juce class
 // it seems that without the inheritance, instances of the derived classes from BaseComp

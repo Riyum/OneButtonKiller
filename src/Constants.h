@@ -26,13 +26,13 @@ inline constexpr struct _Default_Parameters
     float chan_gain = 0;     // dB
 
     WaveType osc_wavetype = WaveType::SIN;
-    double osc_freq = 440;
+    float osc_freq = 440;
     float osc_gain = -25;
     float osc_fm_freq = 0;
     float osc_fm_depth = 0;
 
     WaveType lfo_wavetype = WaveType::SIN;
-    double lfo_freq = 0;
+    float lfo_freq = 0;
     float lfo_gain = 0;         // linear
     size_t lfoUpdateRate = 100; // samples
 
@@ -53,7 +53,7 @@ inline constexpr struct _Parameter_Limits
     double chan_min = -100.0, chan_max = 0;
 
     int osc_waveType_min = 1, osc_waveType_max = 7;
-    double osc_freq_min = 0, osc_freq_max = 24000;
+    double osc_freq_min = 0, osc_freq_max = 22000;
     double osc_gain_min = -100, osc_gain_max = 0;
     double osc_fm_freq_min = 0, osc_fm_freq_max = 150;
     double osc_fm_depth_min = 0, osc_fm_depth_max = 1;
@@ -63,7 +63,7 @@ inline constexpr struct _Parameter_Limits
     double lfo_gain_min = 0, lfo_gain_max = 1;
 
     double delay_mix_min = 0, delay_mix_max = 1;
-    double delay_time_min = 0, delay_time_max = 4.79;
+    double delay_time_min = 0, delay_time_max = 1.79;
     double delay_feedback_min = 0, delay_feedback_max = 1;
 
 } param_limits;

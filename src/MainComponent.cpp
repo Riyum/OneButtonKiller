@@ -5,15 +5,10 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     : state (st), selectors_state (selectors_st)
 // adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
-    std::vector<std::reference_wrapper<const juce::Identifier>> props = {IDs::freq, IDs::gain, IDs::fm_freq, IDs::fm_depth};
-    std::vector<double> limits = {param_limits.osc_freq_max, param_limits.osc_gain_min, param_limits.osc_fm_freq_max,
-                                  param_limits.osc_fm_depth_max};
-
     for (size_t i = 0; i < chains.size(); i++)
     {
         chains[i] = std::make_pair (std::make_unique<Chain>(), std::make_unique<Chain>());
         lfo[i] = std::make_unique<Lfo<float>> (chains[i], i, st);
-        lfo[i]->setLfoRoute (IDs::OSC, props[i], limits[i]);
     }
 
     // Some platforms require permissions to open input channels so request that here
@@ -208,7 +203,8 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
 
     int itemId = 1;
     PopMenuOptions routing_options {
-        {"Osc", {{itemId++, "Freq"}, {itemId++, "Gain"}, {itemId++, "FM Freq"}, {itemId++, "FM Depth"}}}
+        {"Ch", {{itemId++, "Gain"}}},
+        {"Osc", {{itemId++, "Freq"}, {itemId++, "Gain"}, {itemId++, "FM Freq"}, {itemId++, "FM Depth"}}},
     };
     // clang-format on
 
@@ -244,22 +240,33 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
     }
 }
 
-void MainComponent::setLfoRoute (const int lfo_idx, const int val)
+void MainComponent::setLfoRoute (const size_t lfo_idx, const size_t val)
 {
-    size_t idx = static_cast<size_t> (lfo_idx);
+    struct RouteParameters
+    {
+        const juce::Identifier& comp;
+        const juce::Identifier& prop;
+        const double limit;
+    };
 
-    static std::vector<std::reference_wrapper<const juce::Identifier>> prop = {IDs::freq, IDs::gain, IDs::fm_freq,
-                                                                               IDs::fm_depth};
+    size_t itemId = 1;
+    static const std::map<size_t, RouteParameters> rp{
+        // ch
+        {itemId++, {IDs::OUTPUT_GAIN, IDs::gain, param_limits.chan_min}},
+        // osc
+        {itemId++, {IDs::OSC, IDs::freq, param_limits.osc_freq_max}},
+        {itemId++, {IDs::OSC, IDs::gain, param_limits.osc_gain_min}},
+        {itemId++, {IDs::OSC, IDs::fm_freq, param_limits.osc_fm_freq_max}},
+        {itemId++, {IDs::OSC, IDs::fm_depth, param_limits.osc_fm_depth_max}}
+        //
+    };
 
-    static std::vector<double> limit = {param_limits.osc_freq_max, param_limits.osc_gain_min,
-                                        param_limits.osc_fm_freq_max, param_limits.osc_fm_depth_max};
+    if (val > rp.size() || lfo_idx > lfo.size())
+        return;
 
-    size_t itemId = static_cast<size_t> (val) - 1;
-    juce::Identifier comp = IDs::OSC;
-    if (itemId >= 0 && itemId <= 3)
-        comp = IDs::OSC;
+    const auto& opt = rp.at (val);
 
-    lfo[idx]->setLfoRoute (comp, prop[itemId], limit[itemId]);
+    lfo[lfo_idx]->setLfoRoute (opt.comp, opt.prop, opt.limit);
 }
 
 void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::ValueTree& vs)
@@ -397,8 +404,8 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 
         if (propertie == IDs::route)
         {
-            setLfoRoute (idx, val);
-            // updateLfoRouteOptions(idx, static_cast<int>(val));
+            setLfoRoute (idx, static_cast<size_t> ((int)val));
+            return;
         }
 
         if (propertie == IDs::wavetype)
@@ -462,6 +469,7 @@ void MainComponent::setDefaultParameterValues()
         setChainParams (&chains[i], IDs::LFO, IDs::wavetype, def_params.lfo_wavetype);
         setChainParams (&chains[i], IDs::LFO, IDs::freq, def_params.lfo_freq);
         setChainParams (&chains[i], IDs::LFO, IDs::gain, def_params.lfo_gain);
+        setChainParams (&chains[i], IDs::LFO, IDs::route, i + 2);
         // delay
         setChainParams (&chains[i], IDs::DELAY, IDs::mix, def_params.del_mix);
         setChainParams (&chains[i], IDs::DELAY, IDs::time, def_params.del_time);
@@ -475,14 +483,15 @@ void MainComponent::generateRandomParameters()
     static std::mt19937 gen (rd());
 
     static std::uniform_int_distribution<> osc_type (param_limits.osc_waveType_min, 3);
-    static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.osc_freq_max);
+    // static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.osc_freq_max);
+    static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, 4186);
     static std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
     static std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
 
     static std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 4);
     static std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
     static std::uniform_real_distribution<> lfo_gain (param_limits.lfo_gain_min, param_limits.lfo_gain_max);
-    static std::uniform_real_distribution<> lfo_route (1, 4);
+    static std::uniform_int_distribution<> lfo_route (2, 5);
 
     static std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
     static std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
@@ -515,7 +524,8 @@ void MainComponent::generateRandomParameters()
         lfo_states.getChild (i).setProperty (IDs::route, lfo_route (gen), &undoManager);
         if (std::find (indexes.begin(), indexes.end(), i) != indexes.end())
         {
-            osc_states.getChild (i).setProperty (IDs::freq, 0, &undoManager);
+            osc_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.osc_freq_max, per_5 (gen)),
+                                                 &undoManager);
             osc_states.getChild (i).setProperty (
                 IDs::fm_freq, percentageFrom (param_limits.osc_fm_freq_max, per_50 (gen)), &undoManager);
             osc_states.getChild (i).setProperty (

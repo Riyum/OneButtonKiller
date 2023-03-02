@@ -85,8 +85,8 @@ PopupComp::PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Ide
     for (auto const& [comp_description, comp_options] : options)
     {
         sub_menus.add (new juce::PopupMenu());
-        for (auto& opt : comp_options)
-            sub_menus.getLast()->addItem (opt.first, opt.second);
+        for (auto const& [optId, com_prop] : comp_options)
+            sub_menus.getLast()->addItem (optId, com_prop);
 
         menu.getRootMenu()->addSubMenu (comp_description, *sub_menus.getLast());
     }
