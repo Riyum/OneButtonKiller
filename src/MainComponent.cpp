@@ -41,6 +41,7 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     main_comp_height += getComponentHeight (btn_comp) + gui_sizes.yGap_top;
     main_comp_height += getComponentHeight (output_comp) + gui_sizes.yGap_top;
     main_comp_height += getComponentHeight (osc_comp.back()) + gui_sizes.yGap_between_components;
+    main_comp_height += getComponentHeight (filt_comp.back()) + gui_sizes.yGap_between_components;
     main_comp_height += getComponentHeight (lfo_comp.back()) + gui_sizes.yGap_between_components;
     main_comp_height += getComponentHeight (del_comp.back()) + gui_sizes.yGap_between_components;
 
@@ -158,53 +159,53 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
         return;
     }
 
-    if (comp_type == IDs::OUTPUT_GAIN || comp_type == IDs::OSC || comp_type == IDs::LFO || comp_type == IDs::DELAY)
+    size_t idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
+
+    if (comp_type == IDs::OUTPUT_GAIN || comp_type == IDs::OSC || comp_type == IDs::LFO || comp_type == IDs::FILT
+        || comp_type == IDs::DELAY)
     {
-        size_t idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
         const auto& chain = &chains[idx];
         setChainParams (chain, comp_type, prop, comp_state[prop]);
         return;
     }
 
-    if (comp_type == IDs::OSC_GUI)
+    if (prop == IDs::selector)
     {
-        size_t comp_idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
-        osc_comp[comp_idx]->setSelector (
-            state.getChildWithName (IDs::OSC).getChild (static_cast<int> (comp_state[prop]) - 1), &undoManager);
-        return;
-    }
+        int state_idx = static_cast<int> (comp_state[prop]) - 1;
 
-    if (comp_type == IDs::LFO_GUI)
-    {
-        size_t comp_idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
-        lfo_comp[comp_idx]->setSelector (
-            state.getChildWithName (IDs::LFO).getChild (static_cast<int> (comp_state[prop]) - 1), &undoManager);
-        return;
-    }
+        if (comp_type == IDs::OSC_GUI)
+        {
+            osc_comp[idx]->setSelector (state.getChildWithName (IDs::OSC).getChild (state_idx), &undoManager);
+            return;
+        }
 
-    if (comp_type == IDs::DELAY_GUI)
-    {
-        size_t comp_idx = static_cast<size_t> (comp_state.getParent().indexOf (comp_state));
-        del_comp[comp_idx]->setSelector (
-            state.getChildWithName (IDs::DELAY).getChild (static_cast<int> (comp_state[prop]) - 1), &undoManager);
-        return;
+        if (comp_type == IDs::LFO_GUI)
+        {
+            lfo_comp[idx]->setSelector (state.getChildWithName (IDs::LFO).getChild (state_idx), &undoManager);
+            return;
+        }
+
+        if (comp_type == IDs::FILT_GUI)
+        {
+            filt_comp[idx]->setSelector (state.getChildWithName (IDs::FILT).getChild (state_idx), &undoManager);
+            return;
+        }
+
+        if (comp_type == IDs::DELAY_GUI)
+        {
+            del_comp[idx]->setSelector (state.getChildWithName (IDs::DELAY).getChild (state_idx), &undoManager);
+            return;
+        }
     }
 }
 
 void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs)
 {
-
     // clang-format off
     std::vector<std::function<void()>> btn_funcs { [this] { generateRandomParameters(); },
                                                    [this] { undoManager.undo(); },
                                                    [this] { undoManager.redo(); },
                                                    [this] { releaseResources(); }
-    };
-
-    int itemId = 1;
-    PopMenuOptions routing_options {
-        {"Ch", {{itemId++, "Gain"}}},
-        {"Osc", {{itemId++, "Freq"}, {itemId++, "Gain"}, {itemId++, "FM Freq"}, {itemId++, "FM Depth"}}},
     };
     // clang-format on
 
@@ -227,9 +228,16 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
         auto lfo_state = v.getChildWithName (IDs::LFO).getChildWithName (IDs::Group::LFO[i]);
         auto lfo_selector_state = vs.getChildWithName (IDs::LFO_GUI).getChildWithName (IDs::Group::LFO[i]);
 
-        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, &undoManager, routing_options);
+        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, &undoManager);
         if (lfo_comp[i].get() != nullptr)
             addAndMakeVisible (lfo_comp[i].get());
+
+        auto filt_state = v.getChildWithName (IDs::FILT).getChildWithName (IDs::Group::FILT[i]);
+        auto filt_selector_state = vs.getChildWithName (IDs::FILT_GUI).getChildWithName (IDs::Group::FILT[i]);
+
+        filt_comp[i] = std::make_unique<FiltGui> (filt_state, filt_selector_state, &undoManager);
+        if (filt_comp[i].get() != nullptr)
+            addAndMakeVisible (filt_comp[i].get());
 
         auto del_state = v.getChildWithName (IDs::DELAY).getChildWithName (IDs::Group::DELAY[i]);
         auto del_selector_state = vs.getChildWithName (IDs::DELAY_GUI).getChildWithName (IDs::Group::DELAY[i]);
@@ -291,6 +299,12 @@ void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::Valu
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::gain));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::route));
 
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::FILT).getChild (i), IDs::enabled));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::FILT).getChild (i), IDs::filtType));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::FILT).getChild (i), IDs::cutOff));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::FILT).getChild (i), IDs::reso));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::FILT).getChild (i), IDs::drive));
+
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::mix));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::time));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::DELAY).getChild (i), IDs::feedback));
@@ -303,6 +317,8 @@ void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::Valu
             vs.getChildWithName (IDs::OSC_GUI).getChildWithName (IDs::Group::OSC[i]), IDs::selector));
         broadcasters.push_back (std::make_unique<Broadcaster> (
             vs.getChildWithName (IDs::LFO_GUI).getChildWithName (IDs::Group::LFO[i]), IDs::selector));
+        broadcasters.push_back (std::make_unique<Broadcaster> (
+            vs.getChildWithName (IDs::FILT_GUI).getChildWithName (IDs::Group::FILT[i]), IDs::selector));
         broadcasters.push_back (std::make_unique<Broadcaster> (
             vs.getChildWithName (IDs::DELAY_GUI).getChildWithName (IDs::Group::DELAY[i]), IDs::selector));
     }
@@ -337,10 +353,10 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
 {
     if (propertie == IDs::master)
     {
-        for (auto& c : chains)
+        for (auto& [left, right] : chains)
         {
-            c.first->get<ProcIdx::MASTER_GAIN>().setGainLinear (val);
-            c.second->get<ProcIdx::MASTER_GAIN>().setGainLinear (val);
+            left->template get<ProcIdx::MASTER_GAIN>().setGainLinear (val);
+            right->template get<ProcIdx::MASTER_GAIN>().setGainLinear (val);
         }
         return;
     }
@@ -387,6 +403,52 @@ void MainComponent::setChainParams (StereoChain* chain, const juce::Identifier& 
         {
             chain->first->get<ProcIdx::OSC>().setFmDepth (val);
             chain->second->get<ProcIdx::OSC>().setFmDepth (val);
+            return;
+        }
+    }
+
+    if (comp_type == IDs::FILT)
+    {
+
+        if (propertie == IDs::enabled)
+        {
+            chain->first->get<ProcIdx::FILT>().setEnabled (val);
+            chain->second->get<ProcIdx::FILT>().setEnabled (val);
+            return;
+        }
+
+        if (propertie == IDs::filtType)
+        {
+            static std::map<int, juce::dsp::LadderFilterMode> types{
+                {1, juce::dsp::LadderFilterMode::LPF12}, {2, juce::dsp::LadderFilterMode::LPF24},
+                {3, juce::dsp::LadderFilterMode::BPF12}, {4, juce::dsp::LadderFilterMode::BPF24},
+                {5, juce::dsp::LadderFilterMode::HPF12}, {6, juce::dsp::LadderFilterMode::HPF24}};
+
+            size_t k = static_cast<size_t> ((int)val);
+
+            chain->first->get<ProcIdx::FILT>().setMode (types.at (k));
+            chain->second->get<ProcIdx::FILT>().setMode (types.at (k));
+            return;
+        }
+
+        if (propertie == IDs::cutOff)
+        {
+            chain->first->get<ProcIdx::FILT>().setCutoffFrequencyHz (val);
+            chain->second->get<ProcIdx::FILT>().setCutoffFrequencyHz (val);
+            return;
+        }
+
+        if (propertie == IDs::reso)
+        {
+            chain->first->get<ProcIdx::FILT>().setResonance (val);
+            chain->second->get<ProcIdx::FILT>().setResonance (val);
+            return;
+        }
+
+        if (propertie == IDs::drive)
+        {
+            chain->first->get<ProcIdx::FILT>().setDrive (val);
+            chain->second->get<ProcIdx::FILT>().setDrive (val);
             return;
         }
     }
@@ -470,6 +532,12 @@ void MainComponent::setDefaultParameterValues()
         setChainParams (&chains[i], IDs::LFO, IDs::freq, def_params.lfo_freq);
         setChainParams (&chains[i], IDs::LFO, IDs::gain, def_params.lfo_gain);
         setChainParams (&chains[i], IDs::LFO, IDs::route, i + 2);
+        // filter
+        setChainParams (&chains[i], IDs::FILT, IDs::enabled, def_params.filt_enabled);
+        setChainParams (&chains[i], IDs::FILT, IDs::filtType, def_params.filt_type);
+        setChainParams (&chains[i], IDs::FILT, IDs::cutOff, def_params.filt_cutoff);
+        setChainParams (&chains[i], IDs::FILT, IDs::reso, def_params.filt_reso);
+        setChainParams (&chains[i], IDs::FILT, IDs::drive, def_params.filt_drive);
         // delay
         setChainParams (&chains[i], IDs::DELAY, IDs::mix, def_params.del_mix);
         setChainParams (&chains[i], IDs::DELAY, IDs::time, def_params.del_time);
@@ -483,8 +551,7 @@ void MainComponent::generateRandomParameters()
     static std::mt19937 gen (rd());
 
     static std::uniform_int_distribution<> osc_type (param_limits.osc_waveType_min, 3);
-    // static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.osc_freq_max);
-    static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, 4186);
+    static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.C8);
     static std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
     static std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
 
@@ -492,6 +559,12 @@ void MainComponent::generateRandomParameters()
     static std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
     static std::uniform_real_distribution<> lfo_gain (param_limits.lfo_gain_min, param_limits.lfo_gain_max);
     static std::uniform_int_distribution<> lfo_route (2, 5);
+
+    // static std::uniform_int_distribution<> filt_enabled (0, 1);
+    // static std::uniform_int_distribution<> filt_type (param_limits.filt_filtType_min, param_limits.filt_filtType_max);
+    // static std::uniform_real_distribution<> filt_cutOff (param_limits.filt_cutoff_min, param_limits.filt_cutoff_max);
+    // static std::uniform_real_distribution<> filt_reso (param_limits.filt_reso_min, param_limits.filt_reso_max);
+    // static std::uniform_real_distribution<> filt_drive (param_limits.filt_drive_min, param_limits.filt_drive_max - 8);
 
     static std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
     static std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
@@ -514,8 +587,8 @@ void MainComponent::generateRandomParameters()
 
     const auto& osc_states = state.getChildWithName (IDs::OSC);
     const auto& lfo_states = state.getChildWithName (IDs::LFO);
+    // const auto& filt_states = state.getChildWithName (IDs::FILT);
     const auto& del_states = state.getChildWithName (IDs::DELAY);
-    // releaseResources();
 
     for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
     {
@@ -551,6 +624,12 @@ void MainComponent::generateRandomParameters()
                                                  &undoManager);
         }
 
+        // filt_states.getChild (i).setProperty (IDs::enabled, (filt_enabled (gen) != 0 ? true : false), &undoManager);
+        // filt_states.getChild (i).setProperty (IDs::filtType, filt_type (gen), &undoManager);
+        // filt_states.getChild (i).setProperty (IDs::cutOff, filt_cutOff (gen), &undoManager);
+        // filt_states.getChild (i).setProperty (IDs::reso, filt_reso (gen), &undoManager);
+        // filt_states.getChild (i).setProperty (IDs::drive, filt_drive (gen), &undoManager);
+
         del_states.getChild (i).setProperty (IDs::mix, del_mix (gen), &undoManager);
         del_states.getChild (i).setProperty (IDs::time, del_time (gen), &undoManager);
         del_states.getChild (i).setProperty (IDs::feedback, del_feedback (gen), &undoManager);
@@ -559,19 +638,19 @@ void MainComponent::generateRandomParameters()
 
 void MainComponent::oscOn()
 {
-    for (auto&& chain : chains)
+    for (auto&& [left, right] : chains)
     {
-        chain.first->get<ProcIdx::OSC>().setBypass (false);
-        chain.second->get<ProcIdx::OSC>().setBypass (false);
+        left->get<ProcIdx::OSC>().setBypass (false);
+        right->get<ProcIdx::OSC>().setBypass (false);
     }
 }
 
 void MainComponent::oscOff()
 {
-    for (auto&& chain : chains)
+    for (auto&& [left, right] : chains)
     {
-        chain.first->get<ProcIdx::OSC>().setBypass (true);
-        chain.second->get<ProcIdx::OSC>().setBypass (true);
+        left->get<ProcIdx::OSC>().setBypass (true);
+        right->get<ProcIdx::OSC>().setBypass (true);
     }
 }
 
@@ -635,6 +714,20 @@ void MainComponent::resized()
         auto pos = osc_bound.getTopLeft();
         c->setTopLeftPosition (pos);
         osc_bound.removeFromLeft (c->getWidthNeeded() + gui_sizes.yGap_between_components);
+    }
+
+    bounds.removeFromTop (gui_sizes.yGap_between_components);
+    auto filt_bound = bounds.removeFromTop (getComponentHeight (filt_comp.back())).reduced (xPadding, 0);
+
+    for (auto& c : filt_comp)
+    {
+        if (c.get() == nullptr)
+            continue;
+
+        c->setSize (c->getWidthNeeded(), c->getHeightNeeded());
+        auto pos = filt_bound.getTopLeft();
+        c->setTopLeftPosition (pos);
+        filt_bound.removeFromLeft (c->getWidthNeeded() + gui_sizes.yGap_between_components);
     }
 
     bounds.removeFromTop (gui_sizes.yGap_between_components);

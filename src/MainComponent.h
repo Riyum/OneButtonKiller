@@ -59,6 +59,7 @@ private:
     std::unique_ptr<OutputGui> output_comp;
     std::array<std::unique_ptr<OscGui>, NUM_OUTPUT_CHANNELS / 4> osc_comp;
     std::array<std::unique_ptr<LfoGui>, NUM_OUTPUT_CHANNELS / 4> lfo_comp;
+    std::array<std::unique_ptr<FiltGui>, NUM_OUTPUT_CHANNELS / 4> filt_comp;
     std::array<std::unique_ptr<DelayGui>, NUM_OUTPUT_CHANNELS / 4> del_comp;
     // juce::AudioDeviceSelectorComponent adsc;
 

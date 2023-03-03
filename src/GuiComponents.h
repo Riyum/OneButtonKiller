@@ -69,7 +69,7 @@ private:
 class LfoGui : public juce::Component
 {
 public:
-    LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const PopMenuOptions& options);
+    LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um);
     void paint (juce::Graphics& g) override;
     void resized() override;
     void setSelector (juce::ValueTree v, juce::UndoManager* um);
@@ -81,6 +81,26 @@ private:
     std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LfoGui)
+};
+
+//==============================================================================
+class FiltGui : public juce::Component
+{
+public:
+    FiltGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um);
+    void paint (juce::Graphics& g) override;
+    void resized() override;
+    void setSelector (juce::ValueTree v, juce::UndoManager* um);
+    int getWidthNeeded();
+    int getHeightNeeded();
+
+private:
+    static constexpr int NUM_OF_COMPONENTS = 5;
+    juce::ToggleButton onOff_btn;
+    int btn_width = 25, btn_height = 20;
+    std::array<std::unique_ptr<BaseComp>, NUM_OF_COMPONENTS> comps;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FiltGui)
 };
 
 //==============================================================================

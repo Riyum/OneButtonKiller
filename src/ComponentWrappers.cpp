@@ -79,16 +79,16 @@ int ComboComp::getCurrentValue() const
 
 //==============================================================================
 PopupComp::PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop,
-                      const juce::String& labelText, const PopMenuOptions& options)
+                      const juce::String& labelText, const PopMenuParameters& params)
     : BaseComp (prop, labelText)
 {
-    for (auto const& [comp_description, comp_options] : options)
+    for (auto const& [sub_menu_desc, sub_menu_items] : params)
     {
         sub_menus.add (new juce::PopupMenu());
-        for (auto const& [optId, com_prop] : comp_options)
-            sub_menus.getLast()->addItem (optId, com_prop);
+        for (auto const& [itemId, item_desc] : sub_menu_items)
+            sub_menus.getLast()->addItem (itemId, item_desc);
 
-        menu.getRootMenu()->addSubMenu (comp_description, *sub_menus.getLast());
+        menu.getRootMenu()->addSubMenu (sub_menu_desc, *sub_menus.getLast());
     }
     menu.getSelectedIdAsValue().referTo (v.getPropertyAsValue (prop, um));
 }

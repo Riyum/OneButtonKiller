@@ -26,22 +26,26 @@ juce::ValueTree createSelectorsTree()
 {
     juce::ValueTree oscs{IDs::OSC_GUI, {}};
     juce::ValueTree lfos{IDs::LFO_GUI, {}};
+    juce::ValueTree filts{IDs::FILT_GUI, {}};
     juce::ValueTree dels{IDs::DELAY_GUI, {}};
 
     for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 4; ++i)
     {
         juce::ValueTree osc{IDs::Group::OSC[i], {{IDs::selector, param_limits.selector[i]}}};
         juce::ValueTree lfo{IDs::Group::LFO[i], {{IDs::selector, param_limits.selector[i]}}};
+        juce::ValueTree filt{IDs::Group::FILT[i], {{IDs::selector, param_limits.selector[i]}}};
         juce::ValueTree del{IDs::Group::DELAY[i], {{IDs::selector, param_limits.selector[i]}}};
 
         oscs.addChild (osc, -1, nullptr);
         lfos.addChild (lfo, -1, nullptr);
+        filts.addChild (filt, -1, nullptr);
         dels.addChild (del, -1, nullptr);
     }
 
     juce::ValueTree root (IDs::ROOT);
     root.addChild (oscs, -1, nullptr);
     root.addChild (lfos, -1, nullptr);
+    root.addChild (filts, -1, nullptr);
     root.addChild (dels, -1, nullptr);
 
     return root;
@@ -52,6 +56,7 @@ juce::ValueTree createDefaultTree()
     juce::ValueTree outputs{IDs::OUTPUT_GAIN, {{IDs::master, def_params.master_gain}}};
     juce::ValueTree oscs{IDs::OSC, {}};
     juce::ValueTree lfos{IDs::LFO, {}};
+    juce::ValueTree filts{IDs::FILT, {}};
     juce::ValueTree dels{IDs::DELAY, {}};
 
     for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 2; ++i)
@@ -65,12 +70,19 @@ juce::ValueTree createDefaultTree()
                              {IDs::fm_freq, def_params.osc_fm_freq},
                              {IDs::fm_depth, def_params.osc_fm_depth}}};
 
-
         juce::ValueTree lfo{IDs::Group::LFO[i],
                             {{IDs::wavetype, def_params.lfo_wavetype},
                              {IDs::freq, def_params.lfo_freq},
                              {IDs::gain, def_params.lfo_gain},
                              {IDs::route, (int)i + 2}}};
+
+        juce::ValueTree filt{IDs::Group::FILT[i],
+                            {{IDs::filtType, def_params.filt_type},
+                             {IDs::enabled, def_params.filt_enabled},
+                             {IDs::cutOff, def_params.filt_cutoff},
+                             {IDs::reso, def_params.filt_reso},
+                             {IDs::drive, def_params.filt_drive}}};
+
 
         juce::ValueTree del{IDs::Group::DELAY[i],
                             {{IDs::mix, def_params.del_mix},
@@ -80,6 +92,7 @@ juce::ValueTree createDefaultTree()
         outputs.addChild (chan, -1, nullptr);
         oscs.addChild (osc, -1, nullptr);
         lfos.addChild (lfo, -1, nullptr);
+        filts.addChild (filt, -1, nullptr);
         dels.addChild (del, -1, nullptr);
     }
 
@@ -87,6 +100,7 @@ juce::ValueTree createDefaultTree()
     root.addChild (outputs, -1, nullptr);
     root.addChild (oscs, -1, nullptr);
     root.addChild (lfos, -1, nullptr);
+    root.addChild (filts, -1, nullptr);
     root.addChild (dels, -1, nullptr);
 
     return root;

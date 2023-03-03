@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 #include <vector>
 
-using PopMenuOptions = std::vector<std::pair<juce::String, std::vector<std::pair<int, juce::String>>>>;
+using PopMenuParameters = std::vector<std::pair<juce::String, std::vector<std::pair<int, juce::String>>>>;
 
 // It doesn't matter which, but BaseComp need to derive from some juce class
 // it seems that without the inheritance, instances of the derived classes from BaseComp
@@ -66,7 +66,7 @@ class PopupComp : public BaseComp
 {
 public:
     PopupComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop, const juce::String& labelText,
-               const PopMenuOptions& options);
+               const PopMenuParameters& params);
 
     juce::Component* getComponent() override;
     int getPreferredHeight() override;

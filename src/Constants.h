@@ -36,6 +36,12 @@ inline constexpr struct _Default_Parameters
     float lfo_gain = 0;         // linear
     size_t lfoUpdateRate = 100; // samples
 
+    int filt_type = 1; // LPF12;
+    bool filt_enabled = false;
+    float filt_cutoff = 0.1;
+    float filt_reso = 0;
+    float filt_drive = 1;
+
     float del_mix = 0;
     float del_time = 0.7;
     float del_feedback = 0.5;
@@ -52,6 +58,7 @@ inline constexpr struct _Parameter_Limits
     double master_min = 0, master_max = 1;
     double chan_min = -100.0, chan_max = 0;
 
+    int C8 = 4186; // highest note on a standard 88-key piano
     int osc_waveType_min = 1, osc_waveType_max = 7;
     double osc_freq_min = 0, osc_freq_max = 22000;
     double osc_gain_min = -100, osc_gain_max = 0;
@@ -61,6 +68,11 @@ inline constexpr struct _Parameter_Limits
     int lfo_waveType_min = 1, lfo_waveType_max = 4;
     double lfo_freq_min = 0, lfo_freq_max = 30;
     double lfo_gain_min = 0, lfo_gain_max = 1;
+
+    int filt_filtType_min = 1, filt_filtType_max = 6;
+    double filt_cutoff_min = 0.1, filt_cutoff_max = 22000;
+    double filt_reso_min = 0, filt_reso_max = 1;
+    double filt_drive_min = 1, filt_drive_max = 10;
 
     double delay_mix_min = 0, delay_mix_max = 1;
     double delay_time_min = 0, delay_time_max = 1.79;
@@ -115,6 +127,18 @@ DECLARE_ID (gain)
 DECLARE_ID (fm_freq)
 DECLARE_ID (fm_depth)
 
+DECLARE_ID (FILT_GUI)
+DECLARE_ID (FILT)
+DECLARE_ID (FILT1)
+DECLARE_ID (FILT2)
+DECLARE_ID (FILT3)
+DECLARE_ID (FILT4)
+DECLARE_ID (enabled)
+DECLARE_ID (filtType)
+DECLARE_ID (cutOff)
+DECLARE_ID (reso)
+DECLARE_ID (drive)
+
 DECLARE_ID (DELAY_GUI)
 DECLARE_ID (DELAY)
 DECLARE_ID (DELAY1)
@@ -132,18 +156,15 @@ namespace Group
     using IdsArray = std::array<std::reference_wrapper<const juce::Identifier>, NUM_OUTPUT_CHANNELS / 2>;
 
     const IdsArray CHAN = {IDs::CHAN1, IDs::CHAN2, IDs::CHAN3, IDs::CHAN4};
-    /* const IdsArray CHAN = {IDs::CHAN1, IDs::CHAN2, IDs::CHAN3, IDs::CHAN4, */
-    /*                        IDs::CHAN5, IDs::CHAN6, IDs::CHAN7, IDs::CHAN8}; */
 
     const IdsArray OSC = {IDs::OSC1, IDs::OSC2, IDs::OSC3, IDs::OSC4};
-    /* const IdsArray OSC = {IDs::OSC1, IDs::OSC2, IDs::OSC3, IDs::OSC4, IDs::OSC5, IDs::OSC6, IDs::OSC7, IDs::OSC8}; */
 
     const IdsArray LFO = {IDs::LFO1, IDs::LFO2, IDs::LFO3, IDs::LFO4};
-    /* const IdsArray LFO = {IDs::LFO1, IDs::LFO2, IDs::LFO3, IDs::LFO4, IDs::LFO5, IDs::LFO6, IDs::LFO7, IDs::LFO8}; */
+
+    const IdsArray FILT = {IDs::FILT1, IDs::FILT2, IDs::FILT3, IDs::FILT4};
 
     const IdsArray DELAY = {IDs::DELAY1, IDs::DELAY2, IDs::DELAY3, IDs::DELAY4};
-    /* const IdsArray DELAY = {IDs::DELAY1, IDs::DELAY2, IDs::DELAY3, IDs::DELAY4, */
-    /*                         IDs::DELAY5, IDs::DELAY6, IDs::DELAY7, IDs::DELAY8}; */
+
 }; // namespace Group
 
 }; // namespace IDs

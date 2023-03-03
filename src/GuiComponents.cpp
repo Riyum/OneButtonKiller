@@ -201,17 +201,23 @@ int OscGui::getHeightNeeded()
 }
 
 //==============================================================================
-LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um, const PopMenuOptions& options)
+LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
 
 {
-    unsigned i = 0;
+    size_t i = 0;
+
+    int itemId = 1;
+    PopMenuParameters routing_options{
+        {"Ch", {{itemId++, "Gain"}}},
+        {"Osc", {{itemId++, "Freq"}, {itemId++, "Gain"}, {itemId++, "FM Freq"}, {itemId++, "FM Depth"}}},
+    };
 
     comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
     comps[i++] =
         std::make_unique<ComboComp> (v, um, IDs::wavetype, "", juce::StringArray{"sine", "saw", "square", "rand"});
 
-    comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", options);
+    comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", routing_options);
 
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{param_limits.lfo_freq_min, param_limits.lfo_freq_max}, 0.6, "Hz");
@@ -299,6 +305,115 @@ int LfoGui::getWidthNeeded()
 }
 
 int LfoGui::getHeightNeeded()
+{
+    return 70 + 60 + 15;
+}
+
+//==============================================================================
+FiltGui::FiltGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
+
+{
+    size_t i = 0;
+
+    int itemID = 1;
+    PopMenuParameters popParams{
+        {"LP", {{itemID++, "LP12"}, {itemID++, "LP24"}}},
+        {"BP", {{itemID++, "BP12"}, {itemID++, "BP24"}}},
+        {"HP", {{itemID++, "HP12"}, {itemID++, "HP24"}}},
+    };
+
+    comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
+
+    comps[i++] = std::make_unique<PopupComp> (v, um, IDs::filtType, "", popParams);
+
+    comps[i++] = std::make_unique<SliderComp> (
+        v, um, IDs::cutOff, "Cutoff", juce::Range{param_limits.filt_cutoff_min, param_limits.filt_cutoff_max}, 0.4, "Hz");
+
+    comps[i++] = std::make_unique<SliderComp> (v, um, IDs::reso, "Reso",
+                                               juce::Range{param_limits.filt_reso_min, param_limits.filt_reso_max}, 1);
+
+    comps[i++] = std::make_unique<SliderComp> (
+        v, um, IDs::drive, "Drive", juce::Range{param_limits.filt_drive_min, param_limits.filt_drive_max}, 0.7);
+
+    for (auto& c : comps)
+    {
+        if (c == nullptr)
+            continue;
+
+        addAndMakeVisible (c->label);
+        addAndMakeVisible (c->getComponent());
+    }
+
+    onOff_btn.getToggleStateValue().referTo (v.getPropertyAsValue (IDs::enabled, um));
+    addAndMakeVisible (onOff_btn);
+}
+
+void FiltGui::paint (juce::Graphics& g)
+{
+    setComponentGraphics (g, getLocalBounds(), "Filter");
+}
+
+void FiltGui::resized()
+{
+    auto boxes_bounds = getLocalBounds().withTrimmedLeft (gui_sizes.comp_title_font * 3);
+    boxes_bounds.removeFromTop (5);
+    auto slider_bounds = getLocalBounds().removeFromTop (5);
+
+    auto btn_pos = getLocalBounds().withTrimmedTop (5).withTrimmedRight (5).getTopRight();
+    onOff_btn.setSize (btn_width, btn_height);
+    onOff_btn.setTopRightPosition (btn_pos.x, btn_pos.y);
+
+    for (auto& c : comps)
+    {
+        if (c == nullptr)
+            continue;
+
+        if (c->propertie == IDs::selector)
+        {
+            c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), gui_sizes.selector_box_width),
+                                        c->getPreferredHeight());
+            c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (gui_sizes.selector_box_width).getTopLeft());
+            continue;
+        }
+
+        if (c->propertie == IDs::filtType)
+        {
+            c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), c->getPreferredWidth()),
+                                        c->getPreferredHeight());
+            c->getComponent()->setTopLeftPosition (boxes_bounds.removeFromLeft (c->getPreferredWidth()).getTopLeft());
+            continue;
+        }
+
+        c->getComponent()->setSize (juce::jmin (slider_bounds.getWidth(), c->getPreferredWidth()), c->getPreferredHeight());
+        c->getComponent()->setTopLeftPosition (
+            slider_bounds.removeFromLeft (c->getPreferredWidth() + 2).getTopLeft().translated (0, 35 + 30));
+    }
+}
+
+void FiltGui::setSelector (juce::ValueTree v, juce::UndoManager* um)
+{
+
+    onOff_btn.getToggleStateValue().referTo (v.getPropertyAsValue (IDs::enabled, um));
+
+    for (auto& c : comps)
+    {
+        if (c->propertie == IDs::selector)
+            continue;
+
+        if (auto slider = dynamic_cast<juce::Slider*> (c->getComponent()))
+            slider->getValueObject().referTo (v.getPropertyAsValue (c->propertie, um));
+
+        else if (auto comboBox = dynamic_cast<juce::ComboBox*> (c->getComponent()))
+            comboBox->getSelectedIdAsValue().referTo (v.getPropertyAsValue (c->propertie, um));
+    }
+}
+
+int FiltGui::getWidthNeeded()
+{
+    return 72 * 3;
+}
+
+int FiltGui::getHeightNeeded()
 {
     return 70 + 60 + 15;
 }

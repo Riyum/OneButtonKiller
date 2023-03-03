@@ -30,6 +30,7 @@ void Lfo<Type>::setWaveType (const WaveType choice)
         lfo.initialise (
             [] (Type x)
             {
+                juce::ignoreUnused (x);
                 static std::random_device rd;
                 static std::mt19937 gen (rd());
                 static std::uniform_real_distribution<Type> dist (-1.0f, 1.0f);
@@ -37,6 +38,11 @@ void Lfo<Type>::setWaveType (const WaveType choice)
             },
             256);
         return;
+
+    case WaveType::WSIN:
+    case WaveType::WSAW:
+    case WaveType::WSQR:
+        lfo.initialise ([] (Type x) { return std::sin (x); });
 
     default:
         lfo.initialise ([] (Type x) { return std::sin (x); });
