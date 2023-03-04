@@ -29,8 +29,6 @@ MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
     initGuiComponents (state, selectors_st);
     initBroadcasters (state, selectors_st);
 
-    startTimer (500);
-
     int main_comp_width = 0, main_comp_height = 0;
     for (size_t i = 0; i < osc_comp.size(); i++)
     {
@@ -140,11 +138,6 @@ bool MainComponent::keyStateChanged (bool isKeyDown, juce::Component* originatin
     return true;
 }
 
-void MainComponent::timerCallback()
-{
-    undoManager.beginNewTransaction();
-}
-
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 {
     auto comp = dynamic_cast<Broadcaster*> (source);
@@ -175,25 +168,29 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* source)
 
         if (comp_type == IDs::OSC_GUI)
         {
-            osc_comp[idx]->setSelector (state.getChildWithName (IDs::OSC).getChild (state_idx), &undoManager);
+            osc_comp[idx]->setSelector (state.getChildWithName (IDs::OSC).getChild (state_idx),
+                                        undoManager.getManagerPtr());
             return;
         }
 
         if (comp_type == IDs::LFO_GUI)
         {
-            lfo_comp[idx]->setSelector (state.getChildWithName (IDs::LFO).getChild (state_idx), &undoManager);
+            lfo_comp[idx]->setSelector (state.getChildWithName (IDs::LFO).getChild (state_idx),
+                                        undoManager.getManagerPtr());
             return;
         }
 
         if (comp_type == IDs::FILT_GUI)
         {
-            filt_comp[idx]->setSelector (state.getChildWithName (IDs::FILT).getChild (state_idx), &undoManager);
+            filt_comp[idx]->setSelector (state.getChildWithName (IDs::FILT).getChild (state_idx),
+                                         undoManager.getManagerPtr());
             return;
         }
 
         if (comp_type == IDs::DELAY_GUI)
         {
-            del_comp[idx]->setSelector (state.getChildWithName (IDs::DELAY).getChild (state_idx), &undoManager);
+            del_comp[idx]->setSelector (state.getChildWithName (IDs::DELAY).getChild (state_idx),
+                                        undoManager.getManagerPtr());
             return;
         }
     }
@@ -213,7 +210,7 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
     addAndMakeVisible (btn_comp.get());
 
     auto output_state = v.getChildWithName (IDs::OUTPUT_GAIN);
-    output_comp = std::make_unique<OutputGui> (output_state, &undoManager);
+    output_comp = std::make_unique<OutputGui> (output_state, undoManager.getManagerPtr());
     addAndMakeVisible (output_comp.get());
 
     for (size_t i = 0; i < osc_comp.size(); i++)
@@ -221,28 +218,28 @@ void MainComponent::initGuiComponents (const juce::ValueTree& v, const juce::Val
         auto osc_state = v.getChildWithName (IDs::OSC).getChildWithName (IDs::Group::OSC[i]);
         auto osc_selector_state = vs.getChildWithName (IDs::OSC_GUI).getChildWithName (IDs::Group::OSC[i]);
 
-        osc_comp[i] = std::make_unique<OscGui> (osc_state, osc_selector_state, &undoManager);
+        osc_comp[i] = std::make_unique<OscGui> (osc_state, osc_selector_state, undoManager.getManagerPtr());
         if (osc_comp[i].get() != nullptr)
             addAndMakeVisible (osc_comp[i].get());
 
         auto lfo_state = v.getChildWithName (IDs::LFO).getChildWithName (IDs::Group::LFO[i]);
         auto lfo_selector_state = vs.getChildWithName (IDs::LFO_GUI).getChildWithName (IDs::Group::LFO[i]);
 
-        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, &undoManager);
+        lfo_comp[i] = std::make_unique<LfoGui> (lfo_state, lfo_selector_state, undoManager.getManagerPtr());
         if (lfo_comp[i].get() != nullptr)
             addAndMakeVisible (lfo_comp[i].get());
 
         auto filt_state = v.getChildWithName (IDs::FILT).getChildWithName (IDs::Group::FILT[i]);
         auto filt_selector_state = vs.getChildWithName (IDs::FILT_GUI).getChildWithName (IDs::Group::FILT[i]);
 
-        filt_comp[i] = std::make_unique<FiltGui> (filt_state, filt_selector_state, &undoManager);
+        filt_comp[i] = std::make_unique<FiltGui> (filt_state, filt_selector_state, undoManager.getManagerPtr());
         if (filt_comp[i].get() != nullptr)
             addAndMakeVisible (filt_comp[i].get());
 
         auto del_state = v.getChildWithName (IDs::DELAY).getChildWithName (IDs::Group::DELAY[i]);
         auto del_selector_state = vs.getChildWithName (IDs::DELAY_GUI).getChildWithName (IDs::Group::DELAY[i]);
 
-        del_comp[i] = std::make_unique<DelayGui> (del_state, del_selector_state, &undoManager);
+        del_comp[i] = std::make_unique<DelayGui> (del_state, del_selector_state, undoManager.getManagerPtr());
         if (del_comp[i].get() != nullptr)
             addAndMakeVisible (del_comp[i].get());
     }
@@ -327,19 +324,6 @@ void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::Valu
         if (b.get() != nullptr)
             b->addChangeListener (this);
 }
-
-// juce::var MainComponent::getParamValue (const juce::Identifier& parent, const juce::Identifier& node,
-//                                         const juce::Identifier& propertie)
-// {
-//     return state.getChildWithName (parent).getChildWithName (node).getProperty (propertie);
-// }
-
-// template <typename T>
-// void MainComponent::setParamValue (const juce::Identifier& parent, const juce::Identifier& node,
-//                                    const juce::Identifier& propertie, T val)
-// {
-//     state.getChildWithName (parent).getChildWithName (node).setProperty (propertie, val, nullptr);
-// }
 
 juce::var MainComponent::getStateParamValue (const juce::ValueTree& v, const juce::Identifier& parent,
                                              const juce::Identifier& node, const juce::Identifier& propertie)
@@ -592,47 +576,47 @@ void MainComponent::generateRandomParameters()
 
     for (size_t i = 0; i < NUM_OUTPUT_CHANNELS / 2; i++)
     {
-        osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), &undoManager);
-        lfo_states.getChild (i).setProperty (IDs::wavetype, lfo_type (gen), &undoManager);
-        lfo_states.getChild (i).setProperty (IDs::route, lfo_route (gen), &undoManager);
+        osc_states.getChild (i).setProperty (IDs::wavetype, osc_type (gen), undoManager.getManagerPtr());
+        lfo_states.getChild (i).setProperty (IDs::wavetype, lfo_type (gen), undoManager.getManagerPtr());
+        lfo_states.getChild (i).setProperty (IDs::route, lfo_route (gen), undoManager.getManagerPtr());
         if (std::find (indexes.begin(), indexes.end(), i) != indexes.end())
         {
             osc_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.osc_freq_max, per_5 (gen)),
-                                                 &undoManager);
+                                                 undoManager.getManagerPtr());
             osc_states.getChild (i).setProperty (
-                IDs::fm_freq, percentageFrom (param_limits.osc_fm_freq_max, per_50 (gen)), &undoManager);
+                IDs::fm_freq, percentageFrom (param_limits.osc_fm_freq_max, per_50 (gen)), undoManager.getManagerPtr());
             osc_states.getChild (i).setProperty (
-                IDs::fm_depth, percentageFrom (param_limits.osc_fm_depth_max, per_5 (gen)), &undoManager);
+                IDs::fm_depth, percentageFrom (param_limits.osc_fm_depth_max, per_5 (gen)), undoManager.getManagerPtr());
 
             lfo_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.lfo_freq_max, per_1 (gen)),
-                                                 &undoManager);
+                                                 undoManager.getManagerPtr());
             lfo_states.getChild (i).setProperty (IDs::gain, percentageFrom (param_limits.lfo_gain_max, per_50 (gen)),
-                                                 &undoManager);
+                                                 undoManager.getManagerPtr());
         }
         else
         {
             // osc_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.osc_freq_max, per_25 (gen)),
-            //                                      &undoManager);
-            osc_states.getChild (i).setProperty (IDs::freq, osc_freq (gen), &undoManager);
-            osc_states.getChild (i).setProperty (IDs::fm_freq, osc_fm_freq (gen), &undoManager);
+            //                                      undoManager.getManagerPtr());
+            osc_states.getChild (i).setProperty (IDs::freq, osc_freq (gen), undoManager.getManagerPtr());
+            osc_states.getChild (i).setProperty (IDs::fm_freq, osc_fm_freq (gen), undoManager.getManagerPtr());
             osc_states.getChild (i).setProperty (
-                IDs::fm_depth, percentageFrom (param_limits.osc_fm_depth_max, per_25 (gen)), &undoManager);
+                IDs::fm_depth, percentageFrom (param_limits.osc_fm_depth_max, per_25 (gen)), undoManager.getManagerPtr());
 
             lfo_states.getChild (i).setProperty (IDs::freq, percentageFrom (param_limits.lfo_freq_max, per_50 (gen)),
-                                                 &undoManager);
+                                                 undoManager.getManagerPtr());
             lfo_states.getChild (i).setProperty (IDs::gain, percentageFrom (param_limits.lfo_gain_max, per_5 (gen)),
-                                                 &undoManager);
+                                                 undoManager.getManagerPtr());
         }
 
-        // filt_states.getChild (i).setProperty (IDs::enabled, (filt_enabled (gen) != 0 ? true : false), &undoManager);
-        // filt_states.getChild (i).setProperty (IDs::filtType, filt_type (gen), &undoManager);
-        // filt_states.getChild (i).setProperty (IDs::cutOff, filt_cutOff (gen), &undoManager);
-        // filt_states.getChild (i).setProperty (IDs::reso, filt_reso (gen), &undoManager);
-        // filt_states.getChild (i).setProperty (IDs::drive, filt_drive (gen), &undoManager);
+        // filt_states.getChild (i).setProperty (IDs::enabled, (filt_enabled (gen) != 0 ? true : false), undoManager.getManagerPtr());
+        // filt_states.getChild (i).setProperty (IDs::filtType, filt_type (gen), undoManager.getManagerPtr());
+        // filt_states.getChild (i).setProperty (IDs::cutOff, filt_cutOff (gen), undoManager.getManagerPtr());
+        // filt_states.getChild (i).setProperty (IDs::reso, filt_reso (gen), undoManager.getManagerPtr());
+        // filt_states.getChild (i).setProperty (IDs::drive, filt_drive (gen), undoManager.getManagerPtr());
 
-        del_states.getChild (i).setProperty (IDs::mix, del_mix (gen), &undoManager);
-        del_states.getChild (i).setProperty (IDs::time, del_time (gen), &undoManager);
-        del_states.getChild (i).setProperty (IDs::feedback, del_feedback (gen), &undoManager);
+        del_states.getChild (i).setProperty (IDs::mix, del_mix (gen), undoManager.getManagerPtr());
+        del_states.getChild (i).setProperty (IDs::time, del_time (gen), undoManager.getManagerPtr());
+        del_states.getChild (i).setProperty (IDs::feedback, del_feedback (gen), undoManager.getManagerPtr());
     }
 }
 

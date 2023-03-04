@@ -20,6 +20,37 @@ void Broadcaster::valueTreePropertyChanged (juce::ValueTree& v, const juce::Iden
     }
 }
 
+//==============================================================================
+undoMan::undoMan()
+{
+    startTimer (500);
+}
+
+juce::UndoManager& undoMan::getManagerRef()
+{
+    return um;
+}
+
+juce::UndoManager* undoMan::getManagerPtr()
+{
+    return &um;
+}
+
+void undoMan::undo()
+{
+    um.undo();
+}
+
+void undoMan::redo()
+{
+    um.redo();
+}
+
+void undoMan::timerCallback()
+{
+    um.beginNewTransaction();
+}
+
 // clang-format off
 //==============================================================================
 juce::ValueTree createSelectorsTree()

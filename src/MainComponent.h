@@ -19,7 +19,6 @@
 
 class MainComponent : public juce::AudioAppComponent,
                       public juce::ChangeListener, // listening to the state envtes
-                      private juce::Timer,         // triggering the undo managger beginNewTransaction()
                       public juce::KeyListener     // add keyboard events to the app
 {
 public:
@@ -52,7 +51,8 @@ private:
     std::vector<std::unique_ptr<Broadcaster>> broadcasters;
     juce::ValueTree state;
     juce::ValueTree selectors_state;
-    juce::UndoManager undoManager;
+    // juce::UndoManager undoManager;
+    undoMan undoManager;
 
     // GUI controllers
     std::unique_ptr<ButtonsGui> btn_comp;
@@ -64,7 +64,7 @@ private:
     // juce::AudioDeviceSelectorComponent adsc;
 
     //==============================================================================
-    void timerCallback() override;
+    // void timerCallback() override;
     void changeListenerCallback (juce::ChangeBroadcaster* source) override;
 
     void initGuiComponents (const juce::ValueTree& v, const juce::ValueTree& vs);

@@ -5,11 +5,12 @@
 
 OneButtonKiller is an audio instrument, currently with the following components:
 
-| quantity   | component   |
--------------|--------------
-| 4          | Oscillator  |
-| 4          | LFO         |
-| 4          | Delay       |
+| quantity      | component      |
+| ------------- | -------------- |
+| 4             | Oscillator     |
+| 4             | LFO            |
+| 4             | Filter         |
+| 4             | Delay          |
 
 My aim is to develop a program that can generate intricate sound patterns by simply clicking a single button.  
 To attain this objective, I plan to include additional component types, increase their quantity, introduce signal routing
@@ -23,6 +24,7 @@ The user is presented with a simple GUI interface with the following controls:
 - GUI selector: select the audio component that the GUI component will manage
 - Oscillator: wave type, gain, frequency, FM frequency, FM depth
 - LFO: wave type, frequency, depth, routing options
+- Filter: enable / disable, filter type, cutoff frequency, resonance, drive
 - Delay: wet / dry mix, time, feedback
 
 My current develop environment is Linux, the instrument should be cross-platform thanks to JUCE  

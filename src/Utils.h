@@ -38,5 +38,23 @@ private:
 };
 
 //==============================================================================
+class undoMan : private juce::Timer
+{
+public:
+    undoMan();
+    juce::UndoManager& getManagerRef();
+    juce::UndoManager* getManagerPtr();
+    void undo();
+    void redo();
+
+private:
+    juce::UndoManager um;
+
+    void timerCallback() override;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (undoMan)
+};
+
+//==============================================================================
 juce::ValueTree createDefaultTree();
 juce::ValueTree createSelectorsTree();
