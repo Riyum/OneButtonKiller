@@ -8,10 +8,12 @@ BaseComp::BaseComp (const juce::Identifier& prop, const juce::String& labelText)
 
 //==============================================================================
 SliderComp::SliderComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop,
-                        const juce::String& labelText, juce::Range<double> range, double skew, const juce::String& suffix)
+                        const juce::String& labelText, juce::Range<double> range, float steps, double skew,
+                        const juce::String& suffix)
     : BaseComp (prop, labelText)
 {
-    slider.setRange (range.getStart(), range.getEnd(), 0.001);
+    slider.setRange (range.getStart(), range.getEnd(), steps);
+
     slider.setSliderStyle (juce::Slider::SliderStyle::Rotary);
     slider.setTextBoxStyle (juce::Slider::TextEntryBoxPosition::TextBoxBelow, true, 60, 20);
     slider.setSkewFactor (skew);

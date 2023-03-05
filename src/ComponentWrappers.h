@@ -29,8 +29,8 @@ private:
 class SliderComp : public BaseComp
 {
 public:
-    SliderComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& propertie,
-                const juce::String& labelText, juce::Range<double> range, double skew, const juce::String& suffix = {});
+    SliderComp (juce::ValueTree& v, juce::UndoManager* um, const juce::Identifier& prop, const juce::String& labelText,
+                juce::Range<double> range, float steps, double skew = 1, const juce::String& suffix = {});
 
     juce::Component* getComponent() override;
     int getPreferredHeight() override;

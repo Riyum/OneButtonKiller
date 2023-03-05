@@ -48,6 +48,24 @@ private:
 };
 
 //==============================================================================
+class SequencerGui : public juce::Component
+{
+public:
+    SequencerGui (juce::ValueTree& v, juce::UndoManager* um);
+    void paint (juce::Graphics& g) override;
+    void resized() override;
+    int getWidthNeeded();
+    int getHeightNeeded();
+
+private:
+    juce::ToggleButton onOff_btn;
+    std::unique_ptr<SliderComp> slider;
+    int btn_width = 25, btn_height = 20;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SequencerGui)
+};
+
+//==============================================================================
 class OscGui : public juce::Component
 {
 public:

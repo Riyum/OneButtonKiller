@@ -26,6 +26,9 @@
       <FILE id="fGyMWz" name="Delay.cpp" compile="1" resource="0" file="src/Delay.cpp"/>
       <FILE id="SZ1KSF" name="Lfo.cpp" compile="1" resource="0" file="src/Lfo.cpp"/>
       <FILE id="MpzESO" name="Lfo.h" compile="0" resource="0" file="src/Lfo.h"/>
+      <FILE id="ALu34k" name="RandSequencer.cpp" compile="1" resource="0"
+            file="src/RandSequencer.cpp"/>
+      <FILE id="PeV1yT" name="RandSequencer.h" compile="0" resource="0" file="src/RandSequencer.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>

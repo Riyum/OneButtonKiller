@@ -109,7 +109,7 @@ juce::ValueTree createDefaultTree()
 
         juce::ValueTree filt{IDs::Group::FILT[i],
                             {{IDs::filtType, def_params.filt_type},
-                             {IDs::enabled, def_params.filt_enabled},
+                             {IDs::enabled, false},
                              {IDs::cutOff, def_params.filt_cutoff},
                              {IDs::reso, def_params.filt_reso},
                              {IDs::drive, def_params.filt_drive}}};
@@ -127,8 +127,13 @@ juce::ValueTree createDefaultTree()
         dels.addChild (del, -1, nullptr);
     }
 
+    juce::ValueTree seqs{IDs::SEQUENCER, {}};
+    juce::ValueTree seq{IDs::SEQ1, {{IDs::enabled, false}, {IDs::time, def_params.seq_time}}};
+    seqs.addChild (seq, -1, nullptr);
+
     juce::ValueTree root (IDs::ROOT);
     root.addChild (outputs, -1, nullptr);
+    root.addChild (seqs, -1, nullptr);
     root.addChild (oscs, -1, nullptr);
     root.addChild (lfos, -1, nullptr);
     root.addChild (filts, -1, nullptr);

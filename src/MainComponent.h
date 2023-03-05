@@ -5,6 +5,7 @@
 #include "Constants.h"
 #include "GuiComponents.h"
 #include "Lfo.h"
+#include "RandSequencer.h"
 #include "Utils.h"
 
 #include <JuceHeader.h>
@@ -48,15 +49,22 @@ private:
     size_t lfoUpdateCounter = def_params.lfoUpdateRate;
     std::array<std::unique_ptr<Lfo<float>>, NUM_OUTPUT_CHANNELS / 2> lfo;
 
+    // sequencer
+    RandSequencer seq;
+
     std::vector<std::unique_ptr<Broadcaster>> broadcasters;
     juce::ValueTree state;
     juce::ValueTree selectors_state;
-    // juce::UndoManager undoManager;
     undoMan undoManager;
+
+    std::random_device rd;
+    std::mt19937 gen;
+    SUP sup;
 
     // GUI controllers
     std::unique_ptr<ButtonsGui> btn_comp;
     std::unique_ptr<OutputGui> output_comp;
+    std::unique_ptr<SequencerGui> seq_comp;
     std::array<std::unique_ptr<OscGui>, NUM_OUTPUT_CHANNELS / 4> osc_comp;
     std::array<std::unique_ptr<LfoGui>, NUM_OUTPUT_CHANNELS / 4> lfo_comp;
     std::array<std::unique_ptr<FiltGui>, NUM_OUTPUT_CHANNELS / 4> filt_comp;
@@ -75,7 +83,7 @@ private:
                                   const juce::Identifier& node, const juce::Identifier& propertie);
 
     template <typename T>
-    void setChainParams (StereoChain* chain, const juce::Identifier& comp_type, const juce::Identifier& propertie, T val);
+    void setParam (const size_t idx, const juce::Identifier& comp_type, const juce::Identifier& propertie, T val);
 
     void setDefaultParameterValues();
 
@@ -86,6 +94,11 @@ private:
     int getComponentHeight (const std::unique_ptr<T>& comp) const;
 
     void generateRandomParameters();
+    void generateRandomOscParameters (const int index, const bool supresed = false);
+    void generateRandomLfoParameters (const int index, const bool supresed = false);
+    void generateRandomFilterParameters (const int index, const bool supresed = false);
+    void generateRandomDelayParameters (const int index, const bool supresed = false);
+
     void oscOn();
     void oscOff();
 

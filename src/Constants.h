@@ -22,6 +22,8 @@ enum WaveType
 
 inline constexpr struct _Default_Parameters
 {
+    double seq_time = 500;
+
     float master_gain = 0.5; // linear
     float chan_gain = 0;     // dB
 
@@ -54,6 +56,8 @@ inline constexpr struct _Parameter_Limits
     // combobox expecting int's
 
     int selector[NUM_OUTPUT_CHANNELS / 2]{1, 2, 3, 4};
+
+    double seq_time_min = 50, seq_time_max = 2000;
 
     double master_min = 0, master_max = 1;
     double chan_min = -100.0, chan_max = 0;
@@ -104,6 +108,9 @@ DECLARE_ID (CHAN1)
 DECLARE_ID (CHAN2)
 DECLARE_ID (CHAN3)
 DECLARE_ID (CHAN4)
+
+DECLARE_ID (SEQUENCER)
+DECLARE_ID (SEQ1)
 
 DECLARE_ID (OSC_GUI)
 DECLARE_ID (selector)
