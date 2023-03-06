@@ -59,7 +59,7 @@ private:
 
     std::random_device rd;
     std::mt19937 gen;
-    SUP sup;
+    RAND_HELPER rand;
 
     // GUI controllers
     std::unique_ptr<ButtonsGui> btn_comp;
@@ -94,10 +94,10 @@ private:
     int getComponentHeight (const std::unique_ptr<T>& comp) const;
 
     void generateRandomParameters();
-    void generateRandomOscParameters (const int index, const bool supresed = false);
-    void generateRandomLfoParameters (const int index, const bool supresed = false);
-    void generateRandomFilterParameters (const int index, const bool supresed = false);
-    void generateRandomDelayParameters (const int index, const bool supresed = false);
+    void generateRandomOscParameters (const int index, const bool suppressed = false);
+    void generateRandomLfoParameters (const int index, const bool suppressed = false);
+    void generateRandomFilterParameters (const int index, const bool suppressed = false);
+    void generateRandomDelayParameters (const int index, const bool suppressed = false);
 
     void oscOn();
     void oscOff();

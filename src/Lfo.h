@@ -22,8 +22,8 @@ public:
     Type getGain() const;
 
     void setComp (const juce::Identifier& comp_type);
-    void setProp (const juce::Identifier& _prop, Type max);
-    void setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max);
+    void setProp (const juce::Identifier& _prop, Type _max);
+    void setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type _max);
 
     void reset() noexcept;
     void process();
@@ -39,10 +39,12 @@ private:
     const size_t chain_id;
     juce::ValueTree state;
     juce::ValueTree comp_state;
+    juce::Identifier prop;
+
+    Type lfo_val, cur, cur_max, max;
+    std::function<Type()> mod_func;
 
     std::function<void (const Type)> left, right;
-    juce::Identifier prop;
-    Type maxOut;
 
     Lfo (const Lfo&) = delete;
     Lfo& operator= (const Lfo&) = delete;

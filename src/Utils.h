@@ -55,11 +55,11 @@ private:
 };
 
 //==============================================================================
-struct SUP
+struct RAND_HELPER
 {
-    // a struct that returns a random suppressed value
     std::mt19937& gen;
 
+    std::uniform_real_distribution<> p100;
     std::uniform_real_distribution<> p50;
     std::uniform_real_distribution<> p33;
     std::uniform_real_distribution<> p25;
@@ -68,8 +68,9 @@ struct SUP
     std::uniform_real_distribution<> p1;
     std::uniform_real_distribution<> p;
 
-    SUP (std::mt19937& _gen) : gen (_gen)
+    RAND_HELPER (std::mt19937& _gen) : gen (_gen)
     {
+        p100 = std::uniform_real_distribution<> (0, 100);
         p50 = std::uniform_real_distribution<> (0, 50);
         p33 = std::uniform_real_distribution<> (0, 33);
         p25 = std::uniform_real_distribution<> (0, 25);
@@ -79,8 +80,15 @@ struct SUP
         p = p33;
     }
 
+    double getVal (const double val)
+    {
+        // return a value with range [0, val]
+        return percentageFrom (val, p100 (gen));
+    }
+
     double getSup (const double val, const int per)
     {
+        // reurn a suppressed value with range [0, val * max(p(gen)) / 100]
         switch (per)
         {
         case 1:

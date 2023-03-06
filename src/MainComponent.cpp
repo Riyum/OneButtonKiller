@@ -2,7 +2,7 @@
 
 //==============================================================================
 MainComponent::MainComponent (juce::ValueTree st, juce::ValueTree selectors_st)
-    : seq ([this]() { generateRandomParameters(); }), state (st), selectors_state (selectors_st), gen (rd()), sup (gen)
+    : seq ([this]() { generateRandomParameters(); }), state (st), selectors_state (selectors_st), gen (rd()), rand (gen)
 // adsc (deviceManager, 0, NUM_INPUT_CHANNELS, 0, NUM_OUTPUT_CHANNELS, false, false, true, false)
 {
     for (size_t i = 0; i < chains.size(); i++)
@@ -274,7 +274,11 @@ void MainComponent::setLfoRoute (const size_t lfo_idx, const size_t val)
         {itemId++, {IDs::OSC, IDs::freq, param_limits.osc_freq_max}},
         {itemId++, {IDs::OSC, IDs::gain, param_limits.osc_gain_min}},
         {itemId++, {IDs::OSC, IDs::fm_freq, param_limits.osc_fm_freq_max}},
-        {itemId++, {IDs::OSC, IDs::fm_depth, param_limits.osc_fm_depth_max}}
+        {itemId++, {IDs::OSC, IDs::fm_depth, param_limits.osc_fm_depth_max}},
+        // filter
+        {itemId++, {IDs::FILT, IDs::cutOff, param_limits.filt_cutoff_max}},
+        {itemId++, {IDs::FILT, IDs::reso, param_limits.filt_reso_max}},
+        {itemId++, {IDs::FILT, IDs::drive, param_limits.filt_drive_max}}
         //
     };
 
@@ -473,15 +477,6 @@ void MainComponent::setParam (const size_t idx, const juce::Identifier& comp_typ
 
     if (comp_type == IDs::LFO)
     {
-        // // TODO: temporary hack
-        // size_t idx = 0;
-        // for (auto& c : chains)
-        // {
-        //     if (&c == chain)
-        //         break;
-        //     ++idx;
-        // }
-
         if (propertie == IDs::route)
         {
             setLfoRoute (idx, static_cast<size_t> ((int)val));
@@ -587,11 +582,12 @@ void MainComponent::generateRandomParameters()
             generateRandomOscParameters (i);
             generateRandomLfoParameters (i);
         }
+        // generateRandomFilterParameters (i);
         generateRandomDelayParameters (i);
     }
 }
 
-void MainComponent::generateRandomOscParameters (const int index, const bool supresed)
+void MainComponent::generateRandomOscParameters (const int index, const bool suppressed)
 {
     static std::uniform_int_distribution<> osc_type (param_limits.osc_waveType_min, 3);
     static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.C8);
@@ -602,21 +598,21 @@ void MainComponent::generateRandomOscParameters (const int index, const bool sup
 
     osc_state.setProperty (IDs::wavetype, osc_type (gen), undoManager.getManagerPtr());
 
-    if (supresed)
+    if (suppressed)
     {
-        osc_state.setProperty (IDs::freq, sup.getSup (param_limits.C8, 5), undoManager.getManagerPtr());
-        osc_state.setProperty (IDs::fm_freq, sup.getSup (param_limits.osc_fm_freq_max, 50), undoManager.getManagerPtr());
-        osc_state.setProperty (IDs::fm_depth, sup.getSup (param_limits.osc_fm_depth_max, 5), undoManager.getManagerPtr());
+        osc_state.setProperty (IDs::freq, rand.getSup (param_limits.C8, 5), undoManager.getManagerPtr());
+        osc_state.setProperty (IDs::fm_freq, rand.getSup (param_limits.osc_fm_freq_max, 50), undoManager.getManagerPtr());
+        osc_state.setProperty (IDs::fm_depth, rand.getSup (param_limits.osc_fm_depth_max, 5), undoManager.getManagerPtr());
     }
     else
     {
         osc_state.setProperty (IDs::freq, osc_freq (gen), undoManager.getManagerPtr());
         osc_state.setProperty (IDs::fm_freq, osc_fm_freq (gen), undoManager.getManagerPtr());
-        osc_state.setProperty (IDs::fm_depth, sup.getSup (param_limits.osc_fm_depth_max, 25), undoManager.getManagerPtr());
+        osc_state.setProperty (IDs::fm_depth, rand.getSup (param_limits.osc_fm_depth_max, 25), undoManager.getManagerPtr());
     }
 }
 
-void MainComponent::generateRandomLfoParameters (const int index, const bool supresed)
+void MainComponent::generateRandomLfoParameters (const int index, const bool suppressed)
 {
     static std::uniform_int_distribution<> lfo_type (param_limits.lfo_waveType_min, 4);
     static std::uniform_real_distribution<> lfo_freq (param_limits.lfo_freq_min, param_limits.lfo_freq_max);
@@ -625,25 +621,40 @@ void MainComponent::generateRandomLfoParameters (const int index, const bool sup
 
     juce::ValueTree lfo_state = state.getChildWithName (IDs::LFO).getChild (index);
 
-    lfo_state.setProperty (IDs::route, lfo_route (gen), undoManager.getManagerPtr());
+    int route = lfo_route (gen);
+    lfo_state.setProperty (IDs::route, route, undoManager.getManagerPtr());
 
-    if (supresed)
+    float freq = 0, gain = 0;
+    if (suppressed)
     {
         int lfo_t = lfo_type (gen);
         lfo_t = lfo_t <= 2 ? lfo_t : 4; // avoid squear on low freqs
         lfo_state.setProperty (IDs::wavetype, lfo_t, undoManager.getManagerPtr());
-        lfo_state.setProperty (IDs::freq, sup.getSup (param_limits.lfo_freq_max, 1), undoManager.getManagerPtr());
-        lfo_state.setProperty (IDs::gain, sup.getSup (param_limits.lfo_gain_max, 50), undoManager.getManagerPtr());
+
+        freq = rand.getSup (param_limits.lfo_freq_max, 1);
+        if (route == 3) // osc gain
+            gain = rand.getVal (param_limits.lfo_gain_max);
+        else
+            gain = rand.getSup (param_limits.lfo_gain_max, 50);
+
+        lfo_state.setProperty (IDs::freq, freq, undoManager.getManagerPtr());
+        lfo_state.setProperty (IDs::gain, gain, undoManager.getManagerPtr());
     }
     else
     {
+        freq = rand.getSup (param_limits.lfo_freq_max, 50);
+        if (route == 3) // osc gain
+            gain = rand.getVal (param_limits.lfo_gain_max);
+        else
+            gain = rand.getSup (param_limits.lfo_gain_max, 5);
+
         lfo_state.setProperty (IDs::wavetype, lfo_type (gen), undoManager.getManagerPtr());
-        lfo_state.setProperty (IDs::freq, sup.getSup (param_limits.lfo_freq_max, 50), undoManager.getManagerPtr());
-        lfo_state.setProperty (IDs::gain, sup.getSup (param_limits.lfo_gain_max, 5), undoManager.getManagerPtr());
+        lfo_state.setProperty (IDs::freq, freq, undoManager.getManagerPtr());
+        lfo_state.setProperty (IDs::gain, gain, undoManager.getManagerPtr());
     }
 }
 
-void MainComponent::generateRandomFilterParameters (const int index, const bool supresed)
+void MainComponent::generateRandomFilterParameters (const int index, const bool suppressed)
 {
     // static std::uniform_int_distribution<> filt_enabled (0, 1);
     static std::uniform_int_distribution<> filt_type (param_limits.filt_filtType_min, param_limits.filt_filtType_max);
@@ -653,7 +664,7 @@ void MainComponent::generateRandomFilterParameters (const int index, const bool 
 
     juce::ValueTree filt_state = state.getChildWithName (IDs::FILT).getChild (index);
 
-    if (supresed)
+    if (suppressed)
     {
     }
     else
@@ -666,7 +677,7 @@ void MainComponent::generateRandomFilterParameters (const int index, const bool 
     }
 }
 
-void MainComponent::generateRandomDelayParameters (const int index, const bool supresed)
+void MainComponent::generateRandomDelayParameters (const int index, const bool suppressed)
 {
     static std::uniform_real_distribution<> del_mix (param_limits.delay_mix_min, param_limits.delay_mix_max);
     static std::uniform_real_distribution<> del_time (param_limits.delay_time_min, param_limits.delay_time_max);
@@ -675,7 +686,7 @@ void MainComponent::generateRandomDelayParameters (const int index, const bool s
 
     juce::ValueTree del_state = state.getChildWithName (IDs::DELAY).getChild (index);
 
-    if (supresed)
+    if (suppressed)
     {
     }
     else

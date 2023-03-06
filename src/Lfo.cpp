@@ -86,10 +86,10 @@ void Lfo<Type>::setComp (const juce::Identifier& comp_type)
 }
 
 template <typename Type>
-void Lfo<Type>::setProp (const juce::Identifier& _prop, Type max)
+void Lfo<Type>::setProp (const juce::Identifier& _prop, Type _max)
 {
     prop = _prop;
-    maxOut = max;
+    max = _max;
 
     if (comp_state.getParent().getType() == IDs::OUTPUT_GAIN)
     {
@@ -129,16 +129,44 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type max)
         }
     }
 
-    if (comp_state.getParent().getType() == IDs::DELAY)
+    if (comp_state.getParent().getType() == IDs::FILT)
     {
+        if (prop == IDs::cutOff)
+        {
+            left = std::bind (&juce::dsp::LadderFilter<Type>::setCutoffFrequencyHz, &chain.first->get<ProcIdx::FILT>(),
+                              std::placeholders::_1);
+            right = std::bind (&juce::dsp::LadderFilter<Type>::setCutoffFrequencyHz,
+                               &chain.second->get<ProcIdx::FILT>(), std::placeholders::_1);
+        }
+
+        if (prop == IDs::reso)
+        {
+            left = std::bind (&juce::dsp::LadderFilter<Type>::setResonance, &chain.first->get<ProcIdx::FILT>(),
+                              std::placeholders::_1);
+            right = std::bind (&juce::dsp::LadderFilter<Type>::setResonance, &chain.second->get<ProcIdx::FILT>(),
+                               std::placeholders::_1);
+        }
+
+        if (prop == IDs::drive)
+        {
+            left = std::bind (&juce::dsp::LadderFilter<Type>::setDrive, &chain.first->get<ProcIdx::FILT>(),
+                              std::placeholders::_1);
+            right = std::bind (&juce::dsp::LadderFilter<Type>::setDrive, &chain.second->get<ProcIdx::FILT>(),
+                               std::placeholders::_1);
+        }
     }
 }
 
 template <typename Type>
-void Lfo<Type>::setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type max)
+void Lfo<Type>::setLfoRoute (const juce::Identifier& comp_type, const juce::Identifier& _prop, Type _max)
 {
     setComp (comp_type);
-    setProp (_prop, max);
+    setProp (_prop, _max);
+
+    if (prop == IDs::gain)
+        mod_func = [this]() { return juce::jmap (lfo_val, -1.f, 1.f, 0.f, -1 * cur + max); };
+    else
+        mod_func = [this]() { return juce::jmap (lfo_val, -1.f, 1.f, 0.f, cur_max); };
 }
 
 template <typename Type>
@@ -150,18 +178,11 @@ void Lfo<Type>::reset() noexcept
 template <typename Type>
 void Lfo<Type>::process()
 {
-    float lfo_val = lfo.processSample (0.0f);
-    Type cur = comp_state.getProperty (prop);
-    Type max = maxOut - cur;
+    lfo_val = lfo.processSample (0.0f);
+    cur = comp_state.getProperty (prop);
+    cur_max = max - cur;
 
-    Type mod;
-    if (prop != IDs::gain)
-        mod = juce::jmap (lfo_val, -1.f, 1.f, -1 * cur, max);
-    else
-        mod = juce::jmap (lfo_val, -1.f, 1.f, 0.f, -1 * cur + maxOut);
-
-    if (getFrequency() == 0)
-        mod = 0;
+    Type mod = getFrequency() != 0 ? mod_func() : 0;
 
     left (cur + mod * gain);
     right (cur + mod * gain);

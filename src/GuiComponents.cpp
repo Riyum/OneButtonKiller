@@ -256,6 +256,7 @@ LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
     PopMenuParameters routing_options{
         {"Ch", {{itemId++, "Gain"}}},
         {"Osc", {{itemId++, "Freq"}, {itemId++, "Gain"}, {itemId++, "FM Freq"}, {itemId++, "FM Depth"}}},
+        {"Filter", {{itemId++, "cutoff"}, {itemId++, "Reso"}, {itemId++, "Drive"}}},
     };
 
     comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
