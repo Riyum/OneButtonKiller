@@ -2,7 +2,7 @@
 #include "Constants.h"
 
 template <typename Type>
-Lfo<Type>::Lfo (StereoChain& _chain, const size_t _id, const juce::ValueTree& _state)
+Lfo<Type>::Lfo (std::unique_ptr<Chain>& _chain, const size_t _id, const juce::ValueTree& _state)
     : chain (_chain), chain_id (_id), state (_state)
 {
     setLfoRoute (IDs::OSC, IDs::freq, param_limits.osc_freq_max);
@@ -11,7 +11,6 @@ Lfo<Type>::Lfo (StereoChain& _chain, const size_t _id, const juce::ValueTree& _s
 template <typename Type>
 void Lfo<Type>::setWaveType (const WaveType choice)
 {
-
     switch (choice)
     {
     case WaveType::SIN:
@@ -42,8 +41,6 @@ void Lfo<Type>::setWaveType (const WaveType choice)
     case WaveType::WSIN:
     case WaveType::WSAW:
     case WaveType::WSQR:
-        lfo.initialise ([] (Type x) { return std::sin (x); });
-
     default:
         lfo.initialise ([] (Type x) { return std::sin (x); });
         return;
@@ -95,10 +92,9 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type _max)
     {
         if (prop == IDs::gain)
         {
-            left = std::bind (&juce::dsp::Gain<Type>::setGainDecibels, &chain.first->get<ProcIdx::CHAN_GAIN>(),
-                              std::placeholders::_1);
-            right = std::bind (&juce::dsp::Gain<Type>::setGainDecibels, &chain.second->get<ProcIdx::CHAN_GAIN>(),
-                               std::placeholders::_1);
+            chain_func = std::bind (&juce::dsp::Gain<Type>::setGainDecibels, &chain->get<ProcIdx::CHAN_GAIN>(),
+                                    std::placeholders::_1);
+            return;
         }
     }
 
@@ -106,26 +102,26 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type _max)
     {
         if (prop == IDs::gain)
         {
-            left = std::bind (&Osc<Type>::setGainDecibels, &chain.first->get<ProcIdx::OSC>(), std::placeholders::_1);
-            right = std::bind (&Osc<Type>::setGainDecibels, &chain.second->get<ProcIdx::OSC>(), std::placeholders::_1);
+            chain_func = std::bind (&Osc<Type>::setGainDecibels, &chain->get<ProcIdx::OSC>(), std::placeholders::_1);
+            return;
         }
 
         if (prop == IDs::freq)
         {
-            left = std::bind (&Osc<Type>::setBaseFrequency, &chain.first->get<ProcIdx::OSC>(), std::placeholders::_1);
-            right = std::bind (&Osc<Type>::setBaseFrequency, &chain.second->get<ProcIdx::OSC>(), std::placeholders::_1);
+            chain_func = std::bind (&Osc<Type>::setBaseFrequency, &chain->get<ProcIdx::OSC>(), std::placeholders::_1);
+            return;
         }
 
         if (prop == IDs::fm_freq)
         {
-            left = std::bind (&Osc<Type>::setFmFreq, &chain.first->get<ProcIdx::OSC>(), std::placeholders::_1);
-            right = std::bind (&Osc<Type>::setFmFreq, &chain.second->get<ProcIdx::OSC>(), std::placeholders::_1);
+            chain_func = std::bind (&Osc<Type>::setFmFreq, &chain->get<ProcIdx::OSC>(), std::placeholders::_1);
+            return;
         }
 
         if (prop == IDs::fm_depth)
         {
-            left = std::bind (&Osc<Type>::setFmDepth, &chain.first->get<ProcIdx::OSC>(), std::placeholders::_1);
-            right = std::bind (&Osc<Type>::setFmDepth, &chain.second->get<ProcIdx::OSC>(), std::placeholders::_1);
+            chain_func = std::bind (&Osc<Type>::setFmDepth, &chain->get<ProcIdx::OSC>(), std::placeholders::_1);
+            return;
         }
     }
 
@@ -133,26 +129,23 @@ void Lfo<Type>::setProp (const juce::Identifier& _prop, Type _max)
     {
         if (prop == IDs::cutOff)
         {
-            left = std::bind (&juce::dsp::LadderFilter<Type>::setCutoffFrequencyHz, &chain.first->get<ProcIdx::FILT>(),
-                              std::placeholders::_1);
-            right = std::bind (&juce::dsp::LadderFilter<Type>::setCutoffFrequencyHz,
-                               &chain.second->get<ProcIdx::FILT>(), std::placeholders::_1);
+            chain_func = std::bind (&juce::dsp::LadderFilter<Type>::setCutoffFrequencyHz, &chain->get<ProcIdx::FILT>(),
+                                    std::placeholders::_1);
+            return;
         }
 
         if (prop == IDs::reso)
         {
-            left = std::bind (&juce::dsp::LadderFilter<Type>::setResonance, &chain.first->get<ProcIdx::FILT>(),
-                              std::placeholders::_1);
-            right = std::bind (&juce::dsp::LadderFilter<Type>::setResonance, &chain.second->get<ProcIdx::FILT>(),
-                               std::placeholders::_1);
+            chain_func = std::bind (&juce::dsp::LadderFilter<Type>::setResonance, &chain->get<ProcIdx::FILT>(),
+                                    std::placeholders::_1);
+            return;
         }
 
         if (prop == IDs::drive)
         {
-            left = std::bind (&juce::dsp::LadderFilter<Type>::setDrive, &chain.first->get<ProcIdx::FILT>(),
-                              std::placeholders::_1);
-            right = std::bind (&juce::dsp::LadderFilter<Type>::setDrive, &chain.second->get<ProcIdx::FILT>(),
-                               std::placeholders::_1);
+            chain_func =
+                std::bind (&juce::dsp::LadderFilter<Type>::setDrive, &chain->get<ProcIdx::FILT>(), std::placeholders::_1);
+            return;
         }
     }
 }
@@ -184,8 +177,7 @@ void Lfo<Type>::process()
 
     Type mod = getFrequency() != 0 ? mod_func() : 0;
 
-    left (cur + mod * gain);
-    right (cur + mod * gain);
+    chain_func (cur + mod * gain);
 }
 
 template <typename Type>

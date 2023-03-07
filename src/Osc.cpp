@@ -23,8 +23,6 @@ void Osc<Type>::setWaveType (const WaveType choice)
 
     case WaveType::SQR:
         osc.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; });
-        // osc.initialise ([dutyCycle] (Type x)
-        //                 { return (x < (dutyCycle * juce::MathConstants<Type>::twoPi)) ? 1.0f : -1.0f; });
         return;
 
     case WaveType::RAND:
@@ -144,24 +142,25 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
     auto& inputBlock = context.getInputBlock();
     auto& outputBlock = context.getOutputBlock();
     auto numSamples = outputBlock.getNumSamples();
-    auto numChannels = outputBlock.getNumChannels();
 
-    for (size_t ch = 0; ch < numChannels; ++ch)
+    auto* left_in = inputBlock.getChannelPointer (0);
+    auto* left_out = outputBlock.getChannelPointer (0);
+
+    auto* right_out = outputBlock.getChannelPointer (1);
+
+    for (size_t i = 0; i < numSamples; ++i)
     {
-        auto* input = inputBlock.getChannelPointer (ch);
-        auto* output = outputBlock.getChannelPointer (ch);
+        Type fm_val = fm.processSample (0.f);
+        Type cur_max = param_limits.osc_freq_max - freq_base;
+        Type mod = fm.getFrequency() != 0 ? juce::jmap (fm_val, -1.f, 1.f, 0.f, cur_max) : 0;
 
-        for (size_t i = 0; i < numSamples; ++i)
+        pc.template get<ProcIdx::OSC>().setFrequency (freq_base + mod * fm_depth);
+        Type samp = pc.template get<ProcIdx::OSC>().processSample (left_in[i]);
+
+        if (!bypass.load())
         {
-            Type fm_val = fm.processSample (0.f);
-            Type cur_max = param_limits.osc_freq_max - freq_base;
-            Type mod = fm.getFrequency() != 0 ? juce::jmap (fm_val, -1.f, 1.f, 0.f, cur_max) : 0;
-            pc.template get<ProcIdx::OSC>().setFrequency (freq_base + mod * fm_depth);
-
-            if (bypass.load())
-                pc.template get<ProcIdx::OSC>().processSample (input[i]);
-            else
-                output[i] = pc.template get<ProcIdx::OSC>().processSample (input[i]);
+            left_out[i] = samp;
+            right_out[i] = samp;
         }
     }
     pc.template get<ProcIdx::GAIN>().process (context);

@@ -197,7 +197,11 @@ void Delay<Type, maxNumChannels>::updateDelayTime() noexcept
 }
 
 template class DelayLine<float>;
+
 template class Delay<float, 1>;
-// template class Delay<float>;
 template void Delay<float, 1>::process<juce::dsp::ProcessContextReplacing<float>> (
+    const juce::dsp::ProcessContextReplacing<float>& context);
+
+template class Delay<float, 2>;
+template void Delay<float, 2>::process<juce::dsp::ProcessContextReplacing<float>> (
     const juce::dsp::ProcessContextReplacing<float>& context);

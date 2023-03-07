@@ -42,8 +42,8 @@ public:
 
 private:
     //==============================================================================
-    std::array<StereoChain, NUM_OUTPUT_CHANNELS / 2> chains;
-    std::array<StereoBlock, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
+    std::array<std::unique_ptr<Chain>, NUM_OUTPUT_CHANNELS / 2> chains;
+    std::array<juce::dsp::AudioBlock<float>, NUM_OUTPUT_CHANNELS / 2> audio_blocks;
 
     // LFO
     size_t lfoUpdateCounter = def_params.lfoUpdateRate;

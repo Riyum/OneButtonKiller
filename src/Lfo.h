@@ -11,7 +11,7 @@ template <typename Type>
 class Lfo
 {
 public:
-    Lfo (StereoChain& _chain, const size_t _id, const juce::ValueTree& _state);
+    Lfo (std::unique_ptr<Chain>& _chain, const size_t _id, const juce::ValueTree& _state);
 
     void setWaveType (const WaveType choice);
 
@@ -35,16 +35,16 @@ private:
     Type frequency;
     Type gain;
 
-    StereoChain& chain;
+    std::unique_ptr<Chain>& chain;
+    std::function<void (const Type)> chain_func;
+
     const size_t chain_id;
     juce::ValueTree state;
     juce::ValueTree comp_state;
     juce::Identifier prop;
 
     Type lfo_val, cur, cur_max, max;
-    std::function<Type()> mod_func;
-
-    std::function<void (const Type)> left, right;
+    std::function<const Type()> mod_func;
 
     Lfo (const Lfo&) = delete;
     Lfo& operator= (const Lfo&) = delete;
