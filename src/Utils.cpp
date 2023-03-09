@@ -95,14 +95,15 @@ juce::ValueTree createDefaultTree()
         juce::ValueTree chan{IDs::Group::CHAN[i], {{IDs::gain, def_params.chan_gain}}};
 
         juce::ValueTree osc{IDs::Group::OSC[i],
-                            {{IDs::wavetype, def_params.osc_wavetype},
+                            {{IDs::waveType, def_params.osc_wavetype},
                              {IDs::freq, def_params.osc_freq + i*10},
                              {IDs::gain, def_params.osc_gain},
                              {IDs::fm_freq, def_params.osc_fm_freq},
-                             {IDs::fm_depth, def_params.osc_fm_depth}}};
+                             {IDs::fm_depth, def_params.osc_fm_depth},
+                             {IDs::pan, def_params.osc_pan}}};
 
         juce::ValueTree lfo{IDs::Group::LFO[i],
-                            {{IDs::wavetype, def_params.lfo_wavetype},
+                            {{IDs::waveType, def_params.lfo_wavetype},
                              {IDs::freq, def_params.lfo_freq},
                              {IDs::gain, def_params.lfo_gain},
                              {IDs::route, (int)i + 2}}};

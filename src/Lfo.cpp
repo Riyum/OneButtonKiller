@@ -35,7 +35,7 @@ void Lfo<Type>::setWaveType (const WaveType choice)
                 static std::uniform_real_distribution<Type> dist (-1.0f, 1.0f);
                 return dist (gen);
             },
-            256);
+            2048);
         return;
 
     case WaveType::WSIN:

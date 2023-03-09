@@ -32,6 +32,7 @@ inline constexpr struct _Default_Parameters
     float osc_gain = -25;
     float osc_fm_freq = 0;
     float osc_fm_depth = 0;
+    float osc_pan = 0;
 
     WaveType lfo_wavetype = WaveType::SIN;
     float lfo_freq = 0;
@@ -68,6 +69,7 @@ inline constexpr struct _Parameter_Limits
     double osc_gain_min = -100, osc_gain_max = 0;
     double osc_fm_freq_min = 0, osc_fm_freq_max = 150;
     double osc_fm_depth_min = 0, osc_fm_depth_max = 1;
+    double osc_pan_min = -1, osc_pan_max = 1;
 
     int lfo_waveType_min = 1, lfo_waveType_max = 4;
     double lfo_freq_min = 0, lfo_freq_max = 30;
@@ -128,11 +130,12 @@ DECLARE_ID (LFO2)
 DECLARE_ID (LFO3)
 DECLARE_ID (LFO4)
 
-DECLARE_ID (wavetype)
+DECLARE_ID (waveType)
 DECLARE_ID (freq)
 DECLARE_ID (gain)
 DECLARE_ID (fm_freq)
 DECLARE_ID (fm_depth)
+DECLARE_ID (pan)
 
 DECLARE_ID (FILT_GUI)
 DECLARE_ID (FILT)

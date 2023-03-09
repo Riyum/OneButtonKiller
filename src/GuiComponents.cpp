@@ -157,7 +157,7 @@ OscGui::OscGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
     comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
     comps[i++] = std::make_unique<ComboComp> (
-        v, um, IDs::wavetype, "", juce::StringArray{"sine", "saw", "square", "rand", "wsine", "wsaw", "wsqr"});
+        v, um, IDs::waveType, "", juce::StringArray{"sine", "saw", "square", "rand", "wsine", "wsaw", "wsqr"});
 
     comps[i++] = std::make_unique<SliderComp> (
         v, um, IDs::freq, "Freq", juce::Range{param_limits.osc_freq_min, param_limits.osc_freq_max}, 0.001, 0.4, "Hz");
@@ -169,9 +169,12 @@ OscGui::OscGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
                                                juce::Range{param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max},
                                                0.001, 1, "Hz");
 
-    comps[i] = std::make_unique<SliderComp> (v, um, IDs::fm_depth, "FM depth",
-                                             juce::Range{param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max},
-                                             0.001, 0.3);
+    comps[i++] = std::make_unique<SliderComp> (v, um, IDs::fm_depth, "FM depth",
+                                               juce::Range{param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max},
+                                               0.001, 0.3);
+
+    comps[i] = std::make_unique<SliderComp> (v, um, IDs::pan, "Pan",
+                                             juce::Range{param_limits.osc_pan_min, param_limits.osc_pan_max}, 0.001, 1);
 
     for (auto& c : comps)
     {
@@ -209,7 +212,7 @@ void OscGui::resized()
             continue;
         }
 
-        if (c->propertie == IDs::wavetype)
+        if (c->propertie == IDs::waveType)
         {
             c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), c->getPreferredWidth()),
                                         c->getPreferredHeight());
@@ -239,7 +242,7 @@ void OscGui::setSelector (juce::ValueTree v, juce::UndoManager* um)
 
 int OscGui::getWidthNeeded()
 {
-    return 72 * 4;
+    return 72 * 5;
 }
 
 int OscGui::getHeightNeeded()
@@ -262,7 +265,7 @@ LfoGui::LfoGui (juce::ValueTree& v, juce::ValueTree& vs, juce::UndoManager* um)
     comps[i++] = std::make_unique<ComboComp> (vs, um, IDs::selector, "", juce::StringArray{"1", "2", "3", "4"});
 
     comps[i++] =
-        std::make_unique<ComboComp> (v, um, IDs::wavetype, "", juce::StringArray{"sine", "saw", "square", "rand"});
+        std::make_unique<ComboComp> (v, um, IDs::waveType, "", juce::StringArray{"sine", "saw", "square", "rand"});
 
     comps[i++] = std::make_unique<PopupComp> (v, um, IDs::route, "", routing_options);
 
@@ -307,7 +310,7 @@ void LfoGui::resized()
             continue;
         }
 
-        if (c->propertie == IDs::wavetype)
+        if (c->propertie == IDs::waveType)
         {
             c->getComponent()->setSize (juce::jmin (boxes_bounds.getWidth(), c->getPreferredWidth()),
                                         c->getPreferredHeight());

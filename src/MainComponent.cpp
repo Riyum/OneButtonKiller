@@ -297,13 +297,14 @@ void MainComponent::initBroadcasters (const juce::ValueTree& v, const juce::Valu
         broadcasters.push_back (
             std::make_unique<Broadcaster> (v.getChildWithName (IDs::OUTPUT_GAIN).getChild (i), IDs::gain));
 
-        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::wavetype));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::waveType));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::freq));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::gain));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::fm_freq));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::fm_depth));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::OSC).getChild (i), IDs::pan));
 
-        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::wavetype));
+        broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::waveType));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::freq));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::gain));
         broadcasters.push_back (std::make_unique<Broadcaster> (v.getChildWithName (IDs::LFO).getChild (i), IDs::route));
@@ -381,7 +382,7 @@ void MainComponent::setParam (const size_t idx, const juce::Identifier& comp_typ
     if (comp_type == IDs::OSC)
     {
 
-        if (propertie == IDs::wavetype)
+        if (propertie == IDs::waveType)
         {
             chains[idx]->get<ProcIdx::OSC>().setWaveType (static_cast<WaveType> ((int)val));
             return;
@@ -408,6 +409,12 @@ void MainComponent::setParam (const size_t idx, const juce::Identifier& comp_typ
         if (propertie == IDs::fm_depth)
         {
             chains[idx]->get<ProcIdx::OSC>().setFmDepth (val);
+            return;
+        }
+
+        if (propertie == IDs::pan)
+        {
+            chains[idx]->get<ProcIdx::OSC>().setPanner (val);
             return;
         }
     }
@@ -461,7 +468,7 @@ void MainComponent::setParam (const size_t idx, const juce::Identifier& comp_typ
             return;
         }
 
-        if (propertie == IDs::wavetype)
+        if (propertie == IDs::waveType)
         {
             lfo[idx]->setWaveType (static_cast<WaveType> ((int)val));
             return;
@@ -517,13 +524,14 @@ void MainComponent::setDefaultParameterValues()
         // channels gain
         setParam (i, IDs::OUTPUT_GAIN, IDs::gain, def_params.chan_gain);
         // OSC
-        setParam (i, IDs::OSC, IDs::wavetype, def_params.osc_wavetype);
+        setParam (i, IDs::OSC, IDs::waveType, def_params.osc_wavetype);
         setParam (i, IDs::OSC, IDs::freq, def_params.osc_freq + 10 * i);
         setParam (i, IDs::OSC, IDs::gain, def_params.osc_gain);
         setParam (i, IDs::OSC, IDs::fm_freq, def_params.osc_fm_freq);
         setParam (i, IDs::OSC, IDs::fm_depth, def_params.osc_fm_depth);
+        setParam (i, IDs::OSC, IDs::pan, def_params.osc_pan);
         // LFO
-        setParam (i, IDs::LFO, IDs::wavetype, def_params.lfo_wavetype);
+        setParam (i, IDs::LFO, IDs::waveType, def_params.lfo_wavetype);
         setParam (i, IDs::LFO, IDs::freq, def_params.lfo_freq);
         setParam (i, IDs::LFO, IDs::gain, def_params.lfo_gain);
         setParam (i, IDs::LFO, IDs::route, i + 2);
@@ -571,21 +579,26 @@ void MainComponent::generateRandomOscParameters (const int index, const bool sup
     static std::uniform_real_distribution<> osc_freq (param_limits.osc_freq_min, param_limits.C8);
     static std::uniform_real_distribution<> osc_fm_freq (param_limits.osc_fm_freq_min, param_limits.osc_fm_freq_max);
     static std::uniform_real_distribution<> osc_fm_depth (param_limits.osc_fm_depth_min, param_limits.osc_fm_depth_max);
+    static std::uniform_real_distribution<> osc_pan (param_limits.osc_pan_min, param_limits.osc_pan_max);
+    static std::bernoulli_distribution b_dist (0.5);
 
     juce::ValueTree osc_state = state.getChildWithName (IDs::OSC).getChild (index);
 
-    osc_state.setProperty (IDs::wavetype, osc_type (gen), undoManager.getManagerPtr());
+    osc_state.setProperty (IDs::waveType, osc_type (gen), undoManager.getManagerPtr());
 
     if (suppressed)
     {
+        float pan = b_dist (gen) ? rand.getSup (param_limits.osc_pan_min, 10) : rand.getSup (param_limits.osc_pan_max, 10);
+        osc_state.setProperty (IDs::pan, pan, undoManager.getManagerPtr());
         osc_state.setProperty (IDs::freq, rand.getSup (param_limits.C8, 5), undoManager.getManagerPtr());
-        osc_state.setProperty (IDs::fm_freq, rand.getSup (param_limits.osc_fm_freq_max, 50), undoManager.getManagerPtr());
+        osc_state.setProperty (IDs::fm_freq, rand.getSup (param_limits.osc_fm_freq_max, 10), undoManager.getManagerPtr());
         osc_state.setProperty (IDs::fm_depth, rand.getSup (param_limits.osc_fm_depth_max, 5), undoManager.getManagerPtr());
     }
     else
     {
+        osc_state.setProperty (IDs::pan, osc_pan (gen), undoManager.getManagerPtr());
         osc_state.setProperty (IDs::freq, osc_freq (gen), undoManager.getManagerPtr());
-        osc_state.setProperty (IDs::fm_freq, osc_fm_freq (gen), undoManager.getManagerPtr());
+        osc_state.setProperty (IDs::fm_freq, rand.getSup (param_limits.osc_fm_freq_max, 50), undoManager.getManagerPtr());
         osc_state.setProperty (IDs::fm_depth, rand.getSup (param_limits.osc_fm_depth_max, 25), undoManager.getManagerPtr());
     }
 }
@@ -607,7 +620,7 @@ void MainComponent::generateRandomLfoParameters (const int index, const bool sup
     {
         int lfo_t = lfo_type (gen);
         lfo_t = lfo_t <= 2 ? lfo_t : 4; // avoid squear on low freqs
-        lfo_state.setProperty (IDs::wavetype, lfo_t, undoManager.getManagerPtr());
+        lfo_state.setProperty (IDs::waveType, lfo_t, undoManager.getManagerPtr());
 
         freq = rand.getSup (param_limits.lfo_freq_max, 1);
         if (route == 3) // osc gain
@@ -626,7 +639,7 @@ void MainComponent::generateRandomLfoParameters (const int index, const bool sup
         else
             gain = rand.getSup (param_limits.lfo_gain_max, 5);
 
-        lfo_state.setProperty (IDs::wavetype, lfo_type (gen), undoManager.getManagerPtr());
+        lfo_state.setProperty (IDs::waveType, lfo_type (gen), undoManager.getManagerPtr());
         lfo_state.setProperty (IDs::freq, freq, undoManager.getManagerPtr());
         lfo_state.setProperty (IDs::gain, gain, undoManager.getManagerPtr());
     }
@@ -678,17 +691,13 @@ void MainComponent::generateRandomDelayParameters (const int index, const bool s
 void MainComponent::oscOn()
 {
     for (auto&& chain : chains)
-    {
         chain->get<ProcIdx::OSC>().setBypass (false);
-    }
 }
 
 void MainComponent::oscOff()
 {
     for (auto&& chain : chains)
-    {
         chain->get<ProcIdx::OSC>().setBypass (true);
-    }
 }
 
 template <typename T>

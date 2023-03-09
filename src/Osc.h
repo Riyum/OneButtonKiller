@@ -29,6 +29,8 @@ public:
     void setFmDepth (const Type depth);
     void setBypass (const bool b);
 
+    void setPanner (const Type newValue);
+
     Type processSample (const Type input);
 
     void reset() noexcept;
@@ -41,9 +43,10 @@ private:
     {
         OSC,
         GAIN,
+        PAN
     };
 
-    juce::dsp::ProcessorChain<juce::dsp::Oscillator<Type>, juce::dsp::Gain<Type>> pc;
+    juce::dsp::ProcessorChain<juce::dsp::Oscillator<Type>, juce::dsp::Gain<Type>, juce::dsp::Panner<Type>> pc;
     juce::dsp::Oscillator<Type> fm;
 
     Type freq_base;

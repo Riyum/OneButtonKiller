@@ -35,19 +35,19 @@ void Osc<Type>::setWaveType (const WaveType choice)
                 static std::uniform_real_distribution<Type> dist (-1.0f, 1.0f);
                 return dist (gen);
             },
-            256);
+            2048);
         return;
 
     case WaveType::WSIN:
-        osc.initialise ([] (Type x) { return std::sin (x); }, 100);
+        osc.initialise ([] (Type x) { return std::sin (x); }, 2048);
         return;
 
     case WaveType::WSAW:
-        osc.initialise ([] (Type x) { return x / juce::MathConstants<Type>::pi; }, 100);
+        osc.initialise ([] (Type x) { return x / juce::MathConstants<Type>::pi; }, 2048);
         return;
 
     case WaveType::WSQR:
-        osc.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; }, 200);
+        osc.initialise ([] (Type x) { return x < 0.0f ? -1.0f : 1.0f; }, 2048);
         return;
 
     default:
@@ -124,6 +124,12 @@ void Osc<Type>::setBypass (const bool b)
 }
 
 template <typename Type>
+void Osc<Type>::setPanner (const Type newValue)
+{
+    pc.template get<ProcIdx::PAN>().setPan (newValue);
+}
+
+template <typename Type>
 Type Osc<Type>::processSample (const Type input)
 {
     return pc.template get<ProcIdx::OSC>().processSample (input);
@@ -164,6 +170,7 @@ void Osc<Type>::process (const ProcessContext& context) noexcept
         }
     }
     pc.template get<ProcIdx::GAIN>().process (context);
+    pc.template get<ProcIdx::PAN>().process (context);
 }
 
 template <typename Type>
@@ -176,6 +183,7 @@ void Osc<Type>::prepare (const juce::dsp::ProcessSpec& spec)
 
     pc.template get<ProcIdx::OSC>().initialise ([] (float x) { return std::sin (x); });
     pc.template get<ProcIdx::GAIN>().setGainDecibels (-100.0);
+    pc.template get<ProcIdx::PAN>().setPan (0);
 
     fm.initialise ([] (float x) { return std::sin (x); });
     freq_base = 440;
